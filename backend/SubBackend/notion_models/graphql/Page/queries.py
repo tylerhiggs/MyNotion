@@ -1,23 +1,40 @@
-import graphene
+from graphene import ObjectType, relay, List
 from graphene_django import DjangoObjectType
-
+from graphene_django.filter import DjangoFilterConnectionField
 from notion_models.models import Page, Text
+
+# https://docs.graphene-python.org/projects/django/en/latest/tutorial-relay/
+
 
 class PageType(DjangoObjectType):
     class Meta:
         model = Page
         fields = ("id", "name", "text")
 
+
+class TextNode(DjangoObjectType):
+    class Meta:
+        model = Text
+        filter_fields = ["id", "text"]
+        interfaces = (relay.Node,)
+
+
+class PageNode(DjangoObjectType):
+    class Meta:
+        model = Page
+        filter_fields = ["id", "name"]
+        interfaces = (relay.Node,)
+
+
 class TextType(DjangoObjectType):
     class Meta:
         model = Text
-        fields = ("id", "text", "is_bold", "is_italic")
+        fields = ("id", "text")
 
-class PageQuery(graphene.ObjectType):
-    pages = graphene.List(PageType)
 
-    def resolve_pages(root, info):
-        return Page.objects.all()
+class PageQuery(ObjectType):
+    page = relay.Node.Field(PageNode)
+    pages = DjangoFilterConnectionField(PageNode)
     # category_by_name = graphene.Field(CategoryType, name=graphene.String(required=True))
 
     # def resolve_all_ingredients(root, info):
