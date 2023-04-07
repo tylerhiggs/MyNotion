@@ -77,6 +77,8 @@ The 24x24 outline icons can be imported from `@heroicons/vue/24/outline`, the 24
 
 Icons use an upper camel case naming convention and are always suffixed with the word Icon.
 
+Headless UI works similarly to Tailwind CSS, except that instead of utility classes, it provides completely unstyled, fully accessible UI components that you can compose together to build your pages.
+
 
 ## Appolo GraphQL
 https://v4.apollo.vuejs.org/guide-composable/query.html#polling
