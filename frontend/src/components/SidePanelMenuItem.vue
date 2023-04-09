@@ -9,9 +9,10 @@ export default defineComponent({
       type: String,
       required: true,
     },
-    onClick: {
-      type: Function,
+    isSelected: {
+      type: Boolean,
       required: false,
+      default: false,
     },
   },
   components: {
@@ -19,13 +20,6 @@ export default defineComponent({
     MenuButton,
     MenuItems,
     MenuItem,
-  },
-  methods: {
-    handleClick() {
-      if (this.onClick) {
-        this.onClick();
-      }
-    },
   },
 });
 </script>
@@ -35,10 +29,10 @@ export default defineComponent({
     <button
       class="flex items-center rounded-md px-2 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none"
       :class="{ 'bg-gray-100 text-gray-900': active }"
-      @click="handleClick"
     >
       <slot name="icon" />
-      <span class="ml-2">{{ label }}</span>
+      <span v-if="!isSelected" class="ml-2">{{ label }}</span>
+      <span v-else class="ml-2 font-bold">{{ label }}</span>
     </button>
   </MenuItem>
 </template>
