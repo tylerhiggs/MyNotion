@@ -14,3 +14,8 @@ Add libraries
 python -m pip install Django
 pip install -r backend/requirements.txt
 ```
+
+Completely reset the database
+```
+cd backend && ./rmdb
+```
