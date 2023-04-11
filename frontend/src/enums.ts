@@ -9,3 +9,11 @@ export const enum SnackbarColor {
     warning = 'warning',
     info = 'info',
 }
+
+export const enum DefaultPages {
+    PROFILE = 'profile',
+    SEARCH = 'search',
+    UPDATES = 'updates',
+    SETTINGS = 'settings',
+    
+}

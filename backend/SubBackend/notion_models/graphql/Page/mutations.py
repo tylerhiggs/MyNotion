@@ -29,6 +29,9 @@ class CreatePage(graphene.Mutation):
     def mutate(cls, root, info, name=""):
         num_pages = Page.objects.count()
         page = Page.objects.create(name=name, index=num_pages)
+        content = PageContent.objects.create(
+            text=Text.objects.create(text=""), index=0)
+        page.content.add(content)
         return CreatePage(page=page)
 
 
@@ -106,7 +109,8 @@ class UpdateContentOnPage(graphene.Mutation):
             print("page content does not exist")
             return None
         if text != None:
-            page_content.text = text
+            page_content.text.text = text
+            page_content.text.save()
         if index != None:
             page_content.index = index
         if indentation != None:
@@ -139,3 +143,4 @@ class PageMutations(graphene.ObjectType):
     create_page = CreatePage.Field()
     update_page = UpdatePage.Field()
     add_content_to_page = AddContentToPage.Field()
+    update_page_content = UpdateContentOnPage.Field()

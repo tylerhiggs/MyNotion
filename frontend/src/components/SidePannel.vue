@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "@vue/apollo-composable";
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/vue";
 import { useSnackbarStore } from "@/stores/snackbar";
 import { useSelectedPageStore } from "@/stores/selectedPage";
-import { SnackbarColor } from "@/enums";
+import { SnackbarColor, DefaultPages } from "@/enums";
 import { ref } from "vue";
 
 import {
@@ -24,6 +24,7 @@ import {
 } from "@heroicons/vue/20/solid";
 import { DocumentIcon } from "@heroicons/vue/24/outline";
 import SidePanelMenuItem from "./SidePanelMenuItem.vue";
+import EmojiPicker from "./EmojiPicker.vue";
 
 const PAGES_QUERY = gql`
   query Pages {
@@ -59,6 +60,7 @@ export default {
     const snackbarStore = useSnackbarStore();
     const selectedPageStore = useSelectedPageStore();
     const menuOpen = ref(true);
+
     return {
       result,
       error,
@@ -103,14 +105,15 @@ export default {
     Cog8ToothIcon,
     DocumentIcon,
     ChevronRightIcon,
+    EmojiPicker,
   },
 };
 </script>
 
 <template>
   <!-- The real menu -->
-  <div class="fixed h-screen w-72 bg-gray-50">
-    <Menu as="div" class="h-screen w-72">
+  <div class="h-screen w-full bg-gray-50">
+    <Menu as="div" class="h-screen w-full">
       <MenuButton
         class="m-1 h-6 w-6 rounded-md bg-black bg-opacity-0 hover:bg-opacity-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
         @click="toggleMenu"
@@ -180,7 +183,7 @@ export default {
           </div>
         </MenuItem>
         <p v-if="error">{{ error }}</p>
-        <div v-else v-for="page in result?.pages?.edges || []" :key="page.name">
+        <div v-else v-for="page in result?.pages?.edges || []" :key="page.id">
           <SidePanelMenuItem
             :label="page?.node?.name || 'Unknown'"
             class="mx-1 w-11/12"
@@ -192,11 +195,20 @@ export default {
             @click="openPage(page?.node?.id)"
           >
             <template v-slot:icon>
-              <DocumentIcon
-                v-if="!page?.node?.icon || page?.node?.icon === 'E'"
-                class="h-5 w-5"
-              />
-              <p v-else>{{ page?.node?.icon }}</p>
+              <Menu>
+                <MenuButton>
+                  <button class="rounded-md p-0.5 hover:bg-gray-200">
+                    <DocumentIcon
+                      v-if="!page?.node?.icon || page?.node?.icon === 'E'"
+                      class="h-5 w-5"
+                    />
+                    <p v-else>{{ page?.node?.icon }}</p>
+                  </button>
+                </MenuButton>
+                <MenuItems class="relative">
+                  <EmojiPicker class="absolute" :id="page?.node?.id" />
+                </MenuItems>
+              </Menu>
             </template>
           </SidePanelMenuItem>
         </div>
