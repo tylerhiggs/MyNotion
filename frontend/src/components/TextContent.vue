@@ -157,7 +157,7 @@ export default {
       const preBold = fixedText;
       fixedText = fixedText.replace(bold, "<b>$1</b>&nbsp;");
       let cursorRangeAdjustment = preBold === fixedText ? 0 : -3;
-      const italic = /([^*]+?)\*([^*]+?)\*/gm;
+      const italic = /([^*]+|^)\*([^*]+?)\*/gm;
       const preItalic = fixedText;
       fixedText = fixedText.replace(italic, "$1<i>$2</i>&nbsp;");
       cursorRangeAdjustment += preItalic === fixedText ? 0 : -1;
