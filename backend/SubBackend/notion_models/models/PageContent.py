@@ -1,5 +1,6 @@
 from django.db import models
 from .Text import Text
+from .Page import Page
 from notion_models.enums import DEFAULT_ICON, CONTENT_TYPES
 import uuid
 
@@ -16,6 +17,9 @@ class PageContent(models.Model):
     text = models.ForeignKey(
         Text, on_delete=models.CASCADE, blank=True, null=True)
     indentation = models.IntegerField(default=0)
+    page = models.ForeignKey(
+        Page, on_delete=models.CASCADE, related_name="content"
+    )
 
     def __str__(self):
         if self.text:

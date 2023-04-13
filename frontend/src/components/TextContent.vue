@@ -19,14 +19,33 @@ const UPDATE_CONTENT = gql`
   }
 `;
 
+const DELETE_CONTENT = gql`
+  mutation DeleteContent($id: ID!) {
+    removeContentFromPage(contentId: $id) {
+      page {
+        __typename
+        id
+        content {
+          edges {
+            node {
+              __typename
+              id
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
 export default {
   setup(props) {
     const element = ref<HTMLElement | null>(null);
     const type = ref(props.initialType);
-    console.log(type.value);
     const text = ref(props.initialText);
     const boldModeOn = ref(false);
     const { mutate: updateContent } = useMutation(UPDATE_CONTENT);
+    const { mutate: deleteContent } = useMutation(DELETE_CONTENT);
     const snackbarStore = useSnackbarStore();
     return {
       element,
@@ -35,6 +54,7 @@ export default {
       updateContent,
       snackbarStore,
       boldModeOn,
+      deleteContent,
     };
   },
   props: {
@@ -60,7 +80,6 @@ export default {
       if (!this.element) return;
       this.element.blur();
       console.log("unfocusing with text: ", this.text);
-      console.log("and id: ", this.contentId);
       const res = await this.updateContent({
         id: this.contentId,
         text: this.text,
@@ -68,6 +87,45 @@ export default {
       });
       if (res?.data) {
         console.log("saving...");
+      } else {
+        this.snackbarStore.toggleSnackbar("Error!", SnackbarColor.error);
+      }
+    },
+    async deleteContent(event: Event) {
+      if (!event.target) return;
+      const target = event.target as HTMLElement;
+      console.log(`deleting content with innerHTML: "${target.innerHTML}"`);
+      if (
+        (target.innerHTML.length !== 0 && target.innerHTML !== "<br>") ||
+        this.index === 0
+      )
+        return;
+      const res = await this.deleteContent({
+        id: this.contentId,
+      });
+      if (res?.data) {
+        console.log("deleted content");
+        const nextBackElement = document.getElementById(
+          `content-${this.index - 1}`
+        );
+        const sel = window.getSelection();
+        if (nextBackElement && sel) {
+          console.log(
+            `back element inner html length: "${nextBackElement.innerHTML?.length}"`
+          );
+          nextBackElement.focus();
+          sel.removeAllRanges();
+          const range = this.setCursorPosition(
+            nextBackElement,
+            document.createRange(),
+            {
+              pos: -1,
+              done: false,
+            }
+          );
+          range.collapse(true);
+          sel.addRange(range);
+        }
       } else {
         this.snackbarStore.toggleSnackbar("Error!", SnackbarColor.error);
       }
@@ -106,23 +164,36 @@ export default {
       if (stat.done) {
         range.setStart(parent, range.startOffset);
       }
+      if (stat.pos < 0 && parent.textContent) {
+        // place the cursor at the end of the element + pos + 1
+        if (parent.childNodes.length === 0) {
+          range.setStart(parent, parent.textContent.length + stat.pos + 1);
+          return range;
+        } else {
+          this.setCursorPosition(
+            parent.childNodes[parent.childNodes.length - 1],
+            range,
+            {
+              pos: stat.pos,
+              done: false,
+            }
+          );
+        }
+      }
 
-      if (parent.childNodes.length == 0 && parent.textContent) {
+      if (parent.childNodes.length === 0 && parent.textContent) {
         if (parent.textContent.length >= stat.pos) {
           range.setStart(parent, stat.pos);
-          console.log("setting start to: ", stat.pos);
           stat.done = true;
         } else {
           stat.pos = stat.pos - parent.textContent.length;
         }
       } else {
-        console.log(`there are ${parent.childNodes.length} children nodes`);
         for (let i = 0; i < parent.childNodes.length && !stat.done; i++) {
           let currentNode = parent.childNodes[i];
           this.setCursorPosition(currentNode, range, stat);
         }
       }
-      console.log(`setting final range to ${range.startOffset}`);
       return range;
     },
     onInput() {
@@ -134,6 +205,12 @@ export default {
           "Error getting selection!",
           SnackbarColor.error
         );
+        return;
+      }
+      // check if blank to skip and remove weird errors
+      console.log(`onInput: ${this.element.innerHTML}`);
+      if (this.element.innerHTML === "" || this.element.innerHTML === "<br>") {
+        this.element.focus();
         return;
       }
       const node = sel.focusNode;
@@ -151,7 +228,7 @@ export default {
       });
       if (offset === 0) pos.pos += 0.5;
       // parse the text
-      let fixedText = this.element.innerHTML.replace(/(\r\n|\n|\r)/gm, "");
+      let fixedText = this.element.innerHTML.replace(/(\r\n|\n|\r|<br>)/gm, "");
       fixedText = fixedText.replace("<div><br></div>", ""); // new lines not allowed - we create new content instead
       const bold = /\*\*(.+?)\*\*/gm;
       const preBold = fixedText;
@@ -175,10 +252,8 @@ export default {
           done: false,
         }
       );
-      console.log(pos.pos);
       range.collapse(true);
       sel.addRange(range);
-      console.log(range);
     },
   },
 };
@@ -210,9 +285,11 @@ export default {
       @focusout="unfocus"
       @input="onInput"
       @keydown.bold="() => (boldModeOn = !boldModeOn)"
+      @keydown.delete="deleteContent"
+      :id="'content-' + index"
       v-html="text"
     />
-    <ul v-if="type === 'B'"></ul>
+    <ul v-if="type === 'B'" :id="'content-' + index"></ul>
   </div>
 </template>
 

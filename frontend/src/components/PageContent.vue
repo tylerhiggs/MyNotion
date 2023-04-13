@@ -185,9 +185,7 @@ export default {
       });
       if (res?.data) {
         // Focus the new text area which will be text area with index + 1
-        const newTextArea = document.getElementById(
-          `content-${index + 1}`
-        ) as HTMLTextAreaElement;
+        const newTextArea = document.getElementById(`content-${index + 1}`);
         if (newTextArea) {
           newTextArea.focus();
         }
@@ -294,6 +292,7 @@ textarea {
           :initialText="content.text?.text || ''"
           :index="index"
           :contentId="content.id"
+          @keydown.enter="addTextArea($event, index, content.id)"
         />
       </div>
     </div>

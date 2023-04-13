@@ -29,9 +29,8 @@ class CreatePage(graphene.Mutation):
     def mutate(cls, root, info, name=""):
         num_pages = Page.objects.count()
         page = Page.objects.create(name=name, index=num_pages)
-        content = PageContent.objects.create(
-            text=Text.objects.create(text=""), index=0)
-        page.content.add(content)
+        PageContent.objects.create(
+            text=Text.objects.create(text=""), index=0, page=page)
         return CreatePage(page=page)
 
 
@@ -76,21 +75,18 @@ class AddContentToPage(graphene.Mutation):
         print("adding content to page")
         try:
             page = Page.objects.get(id=from_global_id(page_id).id)
-            print(f"found page {page.name}")
         except Page.DoesNotExist:
             print("page does not exist")
             return None
         except Exception as e:
-            print("this should not be here")
             print(e)
             return None
         try:
             text_obj = Text.objects.create(text=text)
 
             index = page.content.count()
-            page_content = PageContent.objects.create(
-                text=text_obj, index=index, indentation=indentation, content_type=content_type)
-            page.content.add(page_content)
+            PageContent.objects.create(
+                text=text_obj, index=index, indentation=indentation, content_type=content_type, page=page)
         except Exception as e:
             print(e)
             return None
@@ -132,7 +128,7 @@ class RemoveContentFromPage(graphene.Mutation):
     class Arguments:
         content_id = graphene.ID(required=True)
 
-    page_content = graphene.Field(PageContentNode)
+    page = graphene.Field(PageNode)
 
     @classmethod
     def mutate(cls, _root, _info, content_id):
@@ -142,8 +138,9 @@ class RemoveContentFromPage(graphene.Mutation):
         except PageContent.DoesNotExist:
             print("page content does not exist")
             return None
+        page = page_content.page
         page_content.delete()
-        return RemoveContentFromPage(page_content=page_content)
+        return RemoveContentFromPage(page=page)
 
 
 class PageMutations(graphene.ObjectType):
@@ -151,3 +148,4 @@ class PageMutations(graphene.ObjectType):
     update_page = UpdatePage.Field()
     add_content_to_page = AddContentToPage.Field()
     update_page_content = UpdateContentOnPage.Field()
+    remove_content_from_page = RemoveContentFromPage.Field()
