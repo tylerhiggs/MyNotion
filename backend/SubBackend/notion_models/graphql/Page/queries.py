@@ -2,6 +2,7 @@ from graphene import ObjectType, relay
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from notion_models.models import Page, Text, PageContent
+from django_filters import FilterSet, OrderingFilter
 
 # https://docs.graphene-python.org/projects/django/en/latest/tutorial-relay/
 

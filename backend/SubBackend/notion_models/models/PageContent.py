@@ -16,3 +16,12 @@ class PageContent(models.Model):
     text = models.ForeignKey(
         Text, on_delete=models.CASCADE, blank=True, null=True)
     indentation = models.IntegerField(default=0)
+
+    def __str__(self):
+        if self.text:
+            return "Page Content['" + self.text.text if len(self.text.text) < 20 else self.text.text[:20] + "...']"
+        else:
+            return "Page Content[No Text]"
+
+    class Meta:
+        ordering = ["index"]

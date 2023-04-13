@@ -64,22 +64,29 @@ class UpdatePage(graphene.Mutation):
 class AddContentToPage(graphene.Mutation):
     class Arguments:
         page_id = graphene.ID(required=True)
-        text = graphene.String(required=True)
+        text = graphene.String()
         index = graphene.Int(required=True)
         indentation = graphene.Int()
         content_type = graphene.Argument(ContentTypes)
 
-    page_content = graphene.Field(PageContentNode)
+    page = graphene.Field(PageNode)
 
     @classmethod
-    def mutate(cls, _root, _info, page_id, text, index, indentation=0, content_type=ContentTypes.TEXT):
+    def mutate(cls, _root, _info, page_id, index, text="", indentation=0, content_type=ContentTypes.TEXT):
+        print("adding content to page")
         try:
             page = Page.objects.get(id=from_global_id(page_id).id)
+            print(f"found page {page.name}")
         except Page.DoesNotExist:
             print("page does not exist")
             return None
+        except Exception as e:
+            print("this should not be here")
+            print(e)
+            return None
         try:
             text_obj = Text.objects.create(text=text)
+
             index = page.content.count()
             page_content = PageContent.objects.create(
                 text=text_obj, index=index, indentation=indentation, content_type=content_type)
@@ -87,7 +94,7 @@ class AddContentToPage(graphene.Mutation):
         except Exception as e:
             print(e)
             return None
-        return AddContentToPage(page_content=page_content)
+        return AddContentToPage(page=page)
 
 
 class UpdateContentOnPage(graphene.Mutation):

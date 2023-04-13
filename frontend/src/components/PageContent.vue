@@ -6,6 +6,7 @@ import { useSnackbarStore } from "@/stores/snackbar";
 import { SnackbarColor } from "@/enums";
 import EmojiPicker from "./EmojiPicker.vue";
 import { Menu, MenuButton, MenuItems } from "@headlessui/vue";
+import TextContent from "./TextContent.vue";
 
 const PAGE_QUERY = gql`
   query Page($id: ID!) {
@@ -18,6 +19,7 @@ const PAGE_QUERY = gql`
         edges {
           node {
             id
+            contentType
             text {
               id
               text
@@ -56,6 +58,40 @@ const UPDATE_CONTENT = gql`
   }
 `;
 
+const CREATE_CONTENT = gql`
+  mutation CreateContent($pageId: ID!, $index: Int!) {
+    addContentToPage(pageId: $pageId, index: $index) {
+      page {
+        __typename
+        id
+        name
+        icon
+        content {
+          edges {
+            node {
+              id
+              contentType
+              text {
+                id
+                text
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+type Content = {
+  id: string;
+  contentType: string;
+  text: {
+    id: string;
+    text: string;
+  };
+};
+
 type Page = {
   page: {
     __typename: string;
@@ -64,23 +100,9 @@ type Page = {
     icon: string;
     content: {
       edges: {
-        node: {
-          id: string;
-          text: {
-            id: string;
-            text: string;
-          };
-        };
+        node: Content;
       }[];
     };
-  };
-};
-
-type Content = {
-  id: string;
-  text: {
-    id: string;
-    text: string;
   };
 };
 
@@ -91,6 +113,7 @@ export default {
     Menu,
     MenuButton,
     MenuItems,
+    TextContent,
   },
   props: {
     id: {
@@ -102,15 +125,20 @@ export default {
     const { result, error, onResult } = useQuery<Page>(PAGE_QUERY, props);
     const { mutate: updatePage } = useMutation(UPDATE_PAGE);
     const { mutate: updateContent } = useMutation(UPDATE_CONTENT);
+    const { mutate: addContentToPage } = useMutation(CREATE_CONTENT);
     const snackbarStore = useSnackbarStore();
     const title = ref("");
-    const content = ref<Content[]>([]);
+    const contents = computed<Content[]>(
+      () => result?.value?.page.content.edges.map((edge) => edge.node) || []
+    );
     onResult((res) => {
       title.value = res?.data?.page?.name ?? "";
-      content.value = (result.value?.page?.content?.edges || []).map(
-        (edge) => edge.node
-      );
+      console.log(res.data);
     });
+    const onChange = (event: Event, index: number) => {
+      const target = event.target as HTMLElement;
+      if (!target?.innerText) return;
+    };
     const emojiPickerOpen = ref(false);
     return {
       result,
@@ -119,8 +147,10 @@ export default {
       updatePage,
       title,
       emojiPickerOpen,
-      content,
+      contents,
       updateContent,
+      onChange,
+      addContentToPage,
     };
   },
   methods: {
@@ -139,16 +169,31 @@ export default {
     closeEmojiPicker() {
       this.emojiPickerOpen = false;
     },
-    addTextArea() {
-      console.log("add text area");
-    },
-    onChange(event: Event, index: number) {
+    /**
+     *
+     * @param event
+     * @param index index should be the index of the current text area
+     * @param id content id for the current text area to save it before adding a new one
+     */
+    async addTextArea(event: Event, index: number, id: string) {
+      // Save the current text
       const target = event.target as HTMLElement;
-      if (!target?.innerText) return;
-      this.snackbarStore.toggleSnackbar(
-        `Saving for index ${index} with ${target.innerText}`,
-        SnackbarColor.info
-      );
+      target.blur();
+      const res = await this.addContentToPage({
+        pageId: this.id,
+        index: index + 1,
+      });
+      if (res?.data) {
+        // Focus the new text area which will be text area with index + 1
+        const newTextArea = document.getElementById(
+          `content-${index + 1}`
+        ) as HTMLTextAreaElement;
+        if (newTextArea) {
+          newTextArea.focus();
+        }
+      } else {
+        this.snackbarStore.toggleSnackbar("Error!", SnackbarColor.error);
+      }
     },
     async onContentBlur(event: Event, index: number, id: string) {
       const target = event.target as HTMLElement;
@@ -187,7 +232,6 @@ textarea {
   border: none;
   font-family: inherit;
   font-size: inherit;
-  background: none;
 }
 
 .textarea {
@@ -230,23 +274,28 @@ textarea {
           </MenuItems>
         </Menu>
       </div>
-      <div class="flex w-full justify-between align-top">
-        <input
-          v-model="title"
-          v-on:keyup.enter="saveTitle"
-          class="w-full font-bold"
+      <div class="mb-12 flex w-full justify-between align-top">
+        <input v-model="title" @focusout="saveTitle" class="w-full font-bold" />
+      </div>
+      <div v-for="(content, index) in contents">
+        <!-- <p
+          role="textbox"
+          class="textarea w-11/12 overflow-y-visible bg-blue-200"
+          :id="'content-' + index"
+          contenteditable
+          v-on:keyup.enter="addTextArea($event, index, edge.node.id)"
+          @focusout="onContentBlur($event, index, edge.node.id)"
+          @keyup="onChange($event, index)"
+        >
+          {{ (index < content.length && content[index]?.text?.text) || "" }}
+        </p> -->
+        <TextContent
+          :initialType="content.contentType || ''"
+          :initialText="content.text?.text || ''"
+          :index="index"
+          :contentId="content.id"
         />
       </div>
-      <p
-        v-for="(edge, index) in result?.page?.content?.edges"
-        role="textbox"
-        class="textarea mt-12 w-11/12 overflow-y-visible"
-        contenteditable
-        @keyup="onChange($event, index)"
-        @focusout="onContentBlur($event, index, edge.node.id)"
-      >
-        {{ edge.node.text.text }}
-      </p>
     </div>
   </div>
 </template>
