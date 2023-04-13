@@ -103,7 +103,9 @@ export default {
       range: Range,
       stat: { pos: number; done: boolean }
     ) {
-      if (stat.done) return range;
+      if (stat.done) {
+        range.setStart(parent, range.startOffset);
+      }
 
       if (parent.childNodes.length == 0 && parent.textContent) {
         if (parent.textContent.length >= stat.pos) {
@@ -114,13 +116,13 @@ export default {
           stat.pos = stat.pos - parent.textContent.length;
         }
       } else {
+        console.log(`there are ${parent.childNodes.length} children nodes`);
         for (let i = 0; i < parent.childNodes.length && !stat.done; i++) {
           let currentNode = parent.childNodes[i];
           this.setCursorPosition(currentNode, range, stat);
         }
       }
-      console.log("range returned vvv");
-      console.log(range);
+      console.log(`setting final range to ${range.startOffset}`);
       return range;
     },
     onInput() {
@@ -151,10 +153,14 @@ export default {
       // parse the text
       let fixedText = this.element.innerHTML.replace(/(\r\n|\n|\r)/gm, "");
       fixedText = fixedText.replace("<div><br></div>", ""); // new lines not allowed - we create new content instead
-      const bold = /\*\*(.*?)\*\*/gm;
+      const bold = /\*\*(.+?)\*\*/gm;
       const preBold = fixedText;
-      fixedText = fixedText.replace(bold, "<b>$1</b>");
-      const cursorRangeAdjustment = preBold === fixedText ? 0 : -4;
+      fixedText = fixedText.replace(bold, "<b>$1</b>&nbsp;");
+      let cursorRangeAdjustment = preBold === fixedText ? 0 : -3;
+      const italic = /([^*]+?)\*([^*]+?)\*/gm;
+      const preItalic = fixedText;
+      fixedText = fixedText.replace(italic, "$1<i>$2</i>&nbsp;");
+      cursorRangeAdjustment += preItalic === fixedText ? 0 : -1;
       if (fixedText !== this.element.innerHTML) {
         this.element.innerHTML = fixedText;
       }
