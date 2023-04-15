@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "@vue/apollo-composable";
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/vue";
 import { useSnackbarStore } from "@/stores/snackbar";
 import { useSelectedPageStore } from "@/stores/selectedPage";
-import { SnackbarColor, DefaultPages } from "@/enums";
+import { SnackbarColor } from "@/enums";
 import { ref } from "vue";
 
 import {
@@ -25,8 +25,10 @@ import {
 import { DocumentIcon } from "@heroicons/vue/24/outline";
 import SidePanelMenuItem from "./SidePanelMenuItem.vue";
 import EmojiPicker from "./EmojiPicker.vue";
+import { graphql } from "@/gql";
+import type { CreatePageMutation } from "@/gql/graphql";
 
-const PAGES_QUERY = gql`
+const PAGES_QUERY = graphql(`
   query Pages {
     pages(isRoot: true) {
       edges {
@@ -39,7 +41,7 @@ const PAGES_QUERY = gql`
       }
     }
   }
-`;
+`);
 
 const CREATE_PAGE = gql`
   mutation CreatePage {
@@ -47,6 +49,8 @@ const CREATE_PAGE = gql`
       page {
         __typename
         id
+        name
+        icon
       }
     }
   }
@@ -55,7 +59,7 @@ const CREATE_PAGE = gql`
 export default {
   name: "SidePannel",
   setup() {
-    const { result, error } = useQuery(PAGES_QUERY);
+    const { result, error, refetch } = useQuery(PAGES_QUERY);
     const { mutate: createPage } = useMutation(CREATE_PAGE);
     const snackbarStore = useSnackbarStore();
     const selectedPageStore = useSelectedPageStore();
@@ -68,6 +72,7 @@ export default {
       snackbarStore,
       menuOpen,
       selectedPageStore,
+      refetch,
     };
   },
   methods: {
@@ -82,7 +87,20 @@ export default {
         this.showSnackbarWaring("Unable to open page");
         return;
       }
+      const textbox = document.activeElement as HTMLElement;
+      if (textbox) {
+        textbox.blur();
+      }
+      this.selectedPageStore.setSelectedPageId("");
       this.selectedPageStore.setSelectedPageId(pageId);
+    },
+    async createNewPage() {
+      const res = await this.createPage();
+      const data = res?.data as CreatePageMutation;
+      if (data) {
+        this.openPage(data?.createPage?.page?.id || "");
+        this.refetch();
+      }
     },
   },
   components: {
@@ -177,15 +195,24 @@ export default {
             <button
               type="button"
               class="mr-2 h-5 w-5 rounded-md bg-inherit hover:bg-gray-100"
+              @click="createNewPage"
             >
               <PlusIcon class="h-5 w-5 text-gray-600" />
             </button>
           </div>
         </MenuItem>
         <p v-if="error">{{ error }}</p>
-        <div v-else v-for="page in result?.pages?.edges || []" :key="page.id">
+        <div
+          v-else
+          v-for="page in result?.pages?.edges || []"
+          :key="page?.node?.id || ''"
+        >
           <SidePanelMenuItem
-            :label="page?.node?.name || 'Unknown'"
+            :label="
+              selectedPageStore.selectedPageId === page?.node?.id
+                ? selectedPageStore.currentPageTitle
+                : page?.node?.name || 'Unknown'
+            "
             class="mx-1 w-11/12"
             :class="
               selectedPageStore.selectedPageId === page?.node?.id
@@ -206,7 +233,7 @@ export default {
                   </button>
                 </MenuButton>
                 <MenuItems class="relative">
-                  <EmojiPicker class="absolute" :id="page?.node?.id" />
+                  <EmojiPicker class="absolute" :id="page?.node?.id || ''" />
                 </MenuItems>
               </Menu>
             </template>

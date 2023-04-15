@@ -1,14 +1,16 @@
 <script lang="ts">
 import gql from "graphql-tag";
+import { graphql } from "@/gql";
 import { ref, computed } from "vue";
 import { useQuery, useMutation } from "@vue/apollo-composable";
 import { useSnackbarStore } from "@/stores/snackbar";
+import { useSelectedPageStore } from "@/stores/selectedPage";
 import { SnackbarColor } from "@/enums";
 import EmojiPicker from "./EmojiPicker.vue";
 import { Menu, MenuButton, MenuItems } from "@headlessui/vue";
 import TextContent from "./TextContent.vue";
 
-const PAGE_QUERY = gql`
+const PAGE_QUERY = graphql(`
   query Page($id: ID!) {
     page(id: $id) {
       __typename
@@ -29,7 +31,7 @@ const PAGE_QUERY = gql`
       }
     }
   }
-`;
+`);
 
 const UPDATE_PAGE = gql`
   mutation UpdatePage($id: ID!, $name: String) {
@@ -45,7 +47,7 @@ const UPDATE_PAGE = gql`
 `;
 
 const UPDATE_CONTENT = gql`
-  mutation UpdateContent($id: ID!, $text: String!, $index: Int!) {
+  mutation UpdatePContent($id: ID!, $text: String!, $index: Int!) {
     updatePageContent(contentId: $id, text: $text, index: $index) {
       pageContent {
         id
@@ -133,13 +135,13 @@ export default {
     );
     onResult((res) => {
       title.value = res?.data?.page?.name ?? "";
-      console.log(res.data);
     });
     const onChange = (event: Event, index: number) => {
       const target = event.target as HTMLElement;
       if (!target?.innerText) return;
     };
     const emojiPickerOpen = ref(false);
+    const selectedPageStore = useSelectedPageStore();
     return {
       result,
       error,
@@ -151,7 +153,13 @@ export default {
       updateContent,
       onChange,
       addContentToPage,
+      selectedPageStore,
     };
+  },
+  watch: {
+    title(newTitle) {
+      this.selectedPageStore.setCurrentPageTitle(newTitle);
+    },
   },
   methods: {
     async saveTitle() {

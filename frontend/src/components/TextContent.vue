@@ -1,15 +1,28 @@
 <script lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import gql from "graphql-tag";
 import { useMutation } from "@vue/apollo-composable";
 import { useSnackbarStore } from "@/stores/snackbar";
 import { SnackbarColor } from "@/enums";
+import { Content_Types } from "@/gql/graphql";
+import type { UpdateContentMutationVariables } from "@/gql/graphql";
 
 const UPDATE_CONTENT = gql`
-  mutation UpdateContent($id: ID!, $text: String!, $index: Int!) {
-    updatePageContent(contentId: $id, text: $text, index: $index) {
+  mutation UpdateContent(
+    $id: ID!
+    $text: String!
+    $index: Int!
+    $type: CONTENT_TYPES
+  ) {
+    updatePageContent(
+      contentId: $id
+      text: $text
+      index: $index
+      contentType: $type
+    ) {
       pageContent {
         id
+        contentType
         text {
           id
           text
@@ -43,18 +56,24 @@ export default {
     const element = ref<HTMLElement | null>(null);
     const type = ref(props.initialType);
     const text = ref(props.initialText);
-    const boldModeOn = ref(false);
+    const nextTypeIsBold = ref(false);
+    const nextTypeIsItalic = ref(false);
     const { mutate: updateContent } = useMutation(UPDATE_CONTENT);
     const { mutate: deleteContent } = useMutation(DELETE_CONTENT);
     const snackbarStore = useSnackbarStore();
+    const isText = computed(() => type.value === Content_Types.Text);
+    const isBullet = computed(() => type.value === Content_Types.BulletedList);
     return {
       element,
       type,
       text,
       updateContent,
       snackbarStore,
-      boldModeOn,
+      nextTypeIsBold,
+      nextTypeIsItalic,
       deleteContent,
+      isText,
+      isBullet,
     };
   },
   props: {
@@ -75,8 +94,19 @@ export default {
       required: true,
     },
   },
+  watch: {
+    initialText(newText) {
+      console.log(this.text, newText);
+      this.text = newText;
+      if (this.element) this.element.innerHTML = newText;
+    },
+    initialType(newType) {
+      console.log("updating type to: ", newType);
+      this.type = newType;
+    },
+  },
   methods: {
-    async unfocus(event: Event) {
+    async unfocus() {
       if (!this.element) return;
       this.element.blur();
       console.log("unfocusing with text: ", this.text);
@@ -96,8 +126,15 @@ export default {
       const target = event.target as HTMLElement;
       console.log(`deleting content with innerHTML: "${target.innerHTML}"`);
       if (
-        (target.innerHTML.length !== 0 && target.innerHTML !== "<br>") ||
-        this.index === 0
+        (this.isText &&
+          target.innerHTML.length !== 0 &&
+          target.innerHTML !== "<br>") ||
+        this.index === 0 ||
+        (this.isBullet &&
+          target.innerHTML.length !== 0 &&
+          target.innerHTML !== "<br>" &&
+          target.innerHTML !== " " &&
+          target.innerHTML !== "&nbsp;")
       )
         return;
       const res = await this.deleteContent({
@@ -196,8 +233,32 @@ export default {
       }
       return range;
     },
-    onInput() {
+    async onInput(_?: Event, mannualInput?: string) {
       if (!this.element) return;
+      if (
+        this.element.innerHTML === "* " ||
+        this.element.innerHTML === "*&nbsp;"
+      ) {
+        this.element.innerHTML = "&nbsp;";
+        this.element.focus();
+        try {
+          const res = await this.updateContent({
+            id: this.contentId,
+            text: "&nbsp;",
+            index: this.index,
+            type: Content_Types.BulletedList,
+          } as UpdateContentMutationVariables);
+          if (res?.data) {
+            console.log("saving new list element...");
+            this.element.focus();
+          } else {
+            this.snackbarStore.toggleSnackbar("Error!", SnackbarColor.error);
+          }
+        } catch (e) {
+          console.error(e);
+          this.snackbarStore.toggleSnackbar("Error!", SnackbarColor.error);
+        }
+      }
       // lets get the cursor position
       const sel = window.getSelection();
       if (!sel) {
@@ -232,6 +293,9 @@ export default {
       fixedText = fixedText.replace("<div><br></div>", ""); // new lines not allowed - we create new content instead
       const bold = /\*\*(.+?)\*\*/gm;
       const preBold = fixedText;
+      if (this.nextTypeIsBold) {
+        this.nextTypeIsBold = false;
+      }
       fixedText = fixedText.replace(bold, "<b>$1</b>&nbsp;");
       let cursorRangeAdjustment = preBold === fixedText ? 0 : -3;
       const italic = /([^*]+|^)\*([^*]+?)\*/gm;
@@ -260,36 +324,38 @@ export default {
 </script>
 
 <template>
-  <!-- class CONTENT_TYPES(models.TextChoices):
-    TEXT = "T", _("Text")
-    PAGE = "P", _("Page")
-    H1 = "1", _("Heading 1")
-    H2 = "2", _("Heading 2")
-    H3 = "3", _("Heading 3")
-    H4 = "4", _("Heading 4")
-    H5 = "5", _("Heading 5")
-    H6 = "6", _("Heading 6")
-    BULLETED_LIST = "B", _("Bulleted List")
-    NUMBERED_LIST = "N", _("Numbered List")
-    TODO_LIST = "D", _("To-do List")
-    QUOTE = "Q", _("Quote")
-    CODE = "C", _("Code") -->
   <div>
-    <p
-      v-if="type === 'T'"
-      ref="element"
-      v-once
-      contenteditable
-      role="textbox"
-      class="textarea w-11/12 overflow-y-visible bg-blue-200"
-      @focusout="unfocus"
-      @input="onInput"
-      @keydown.bold="() => (boldModeOn = !boldModeOn)"
-      @keydown.delete="deleteContent"
-      :id="'content-' + index"
-      v-html="text"
-    />
-    <ul v-if="type === 'B'" :id="'content-' + index"></ul>
+    <div v-if="isText">
+      <p
+        ref="element"
+        v-once
+        contenteditable
+        role="textbox"
+        class="textarea w-11/12 overflow-y-visible bg-blue-200"
+        @focusout="unfocus"
+        @input="onInput"
+        @keydown.cmd.b="() => (nextTypeIsBold = !nextTypeIsBold)"
+        @keydown.delete="deleteContent"
+        :id="'content-' + index"
+        v-html="text"
+      />
+    </div>
+    <div v-if="isBullet">
+      <li
+        v-if="isBullet"
+        ref="element"
+        v-once
+        contenteditable
+        role="textbox"
+        class="li textarea w-11/12 overflow-y-visible bg-blue-200"
+        @focusout="unfocus"
+        @input="onInput"
+        @keydown.cmd.b="() => (nextTypeIsBold = !nextTypeIsBold)"
+        @keydown.delete="deleteContent"
+        :id="'content-' + index"
+        v-html="text"
+      />
+    </div>
   </div>
 </template>
 
@@ -305,5 +371,8 @@ export default {
   min-height: 40px;
   line-height: 20px;
   resize: none;
+}
+.li {
+  display: list-item;
 }
 </style>

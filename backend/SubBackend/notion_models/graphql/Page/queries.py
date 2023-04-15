@@ -1,8 +1,8 @@
-from graphene import ObjectType, relay
+from graphene import ObjectType, relay, Field
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from notion_models.models import Page, Text, PageContent
-from django_filters import FilterSet, OrderingFilter
+from notion_models.enums import ContentTypes
 
 # https://docs.graphene-python.org/projects/django/en/latest/tutorial-relay/
 
@@ -22,6 +22,8 @@ class PageNode(DjangoObjectType):
 
 
 class PageContentNode(DjangoObjectType):
+    content_type = Field(ContentTypes)
+
     class Meta:
         model = PageContent
         filter_fields = ["id", "text"]

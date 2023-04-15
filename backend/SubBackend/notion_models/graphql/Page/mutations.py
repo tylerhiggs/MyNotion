@@ -2,7 +2,7 @@ import graphene
 from graphene_django import DjangoObjectType
 from graphql_relay.node.node import from_global_id
 from .queries import PageContentNode, PageNode
-from notion_models.enums import ContentTypes  # gql enum
+from notion_models.enums import ContentTypes  # !gql enum
 
 from notion_models.models import Page, Text, PageContent
 
@@ -105,6 +105,8 @@ class UpdateContentOnPage(graphene.Mutation):
 
     @classmethod
     def mutate(cls, _root, _info, content_id, text=None, index=None, indentation=None, content_type=None):
+        print("Yayyyyyyyy I made it in here")
+        print(f"content_type: {content_type}")
         try:
             page_content = PageContent.objects.get(
                 id=from_global_id(content_id).id)
@@ -120,7 +122,9 @@ class UpdateContentOnPage(graphene.Mutation):
             page_content.indentation = indentation
         if content_type != None:
             page_content.content_type = content_type
+            print(f"page.content_type: {page_content.content_type}")
         page_content.save()
+        print("saved page content")
         return UpdateContentOnPage(page_content=page_content)
 
 

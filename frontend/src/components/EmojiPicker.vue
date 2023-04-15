@@ -43,7 +43,7 @@ import { useMutation } from "@vue/apollo-composable";
 import gql from "graphql-tag";
 
 const UPDATE_ICON = gql`
-  mutation UpdatePage($id: ID!, $icon: String) {
+  mutation UpdatePageCopy($id: ID!, $icon: String) {
     updatePage(id: $id, icon: $icon) {
       page {
         __typename
