@@ -122,50 +122,7 @@ export default {
       }
     },
     async deleteContent(event: Event) {
-      if (!event.target) return;
-      const target = event.target as HTMLElement;
-      console.log(`deleting content with innerHTML: "${target.innerHTML}"`);
-      if (
-        (this.isText &&
-          target.innerHTML.length !== 0 &&
-          target.innerHTML !== "<br>") ||
-        this.index === 0 ||
-        (this.isBullet &&
-          target.innerHTML.length !== 0 &&
-          target.innerHTML !== "<br>" &&
-          target.innerHTML !== " " &&
-          target.innerHTML !== "&nbsp;")
-      )
-        return;
-      const res = await this.deleteContent({
-        id: this.contentId,
-      });
-      if (res?.data) {
-        console.log("deleted content");
-        const nextBackElement = document.getElementById(
-          `content-${this.index - 1}`
-        );
-        const sel = window.getSelection();
-        if (nextBackElement && sel) {
-          console.log(
-            `back element inner html length: "${nextBackElement.innerHTML?.length}"`
-          );
-          nextBackElement.focus();
-          sel.removeAllRanges();
-          const range = this.setCursorPosition(
-            nextBackElement,
-            document.createRange(),
-            {
-              pos: -1,
-              done: false,
-            }
-          );
-          range.collapse(true);
-          sel.addRange(range);
-        }
-      } else {
-        this.snackbarStore.toggleSnackbar("Error!", SnackbarColor.error);
-      }
+      console.log("time to delete");
     },
     focus() {
       if (this.element) this.element.focus();
@@ -235,30 +192,6 @@ export default {
     },
     async onInput(_?: Event, mannualInput?: string) {
       if (!this.element) return;
-      if (
-        this.element.innerHTML === "* " ||
-        this.element.innerHTML === "*&nbsp;"
-      ) {
-        this.element.innerHTML = "&nbsp;";
-        this.element.focus();
-        try {
-          const res = await this.updateContent({
-            id: this.contentId,
-            text: "&nbsp;",
-            index: this.index,
-            type: Content_Types.BulletedList,
-          } as UpdateContentMutationVariables);
-          if (res?.data) {
-            console.log("saving new list element...");
-            this.element.focus();
-          } else {
-            this.snackbarStore.toggleSnackbar("Error!", SnackbarColor.error);
-          }
-        } catch (e) {
-          console.error(e);
-          this.snackbarStore.toggleSnackbar("Error!", SnackbarColor.error);
-        }
-      }
       // lets get the cursor position
       const sel = window.getSelection();
       if (!sel) {
@@ -270,10 +203,6 @@ export default {
       }
       // check if blank to skip and remove weird errors
       console.log(`onInput: ${this.element.innerHTML}`);
-      if (this.element.innerHTML === "" || this.element.innerHTML === "<br>") {
-        this.element.focus();
-        return;
-      }
       const node = sel.focusNode;
       if (!node) {
         this.snackbarStore.toggleSnackbar(
@@ -289,19 +218,25 @@ export default {
       });
       if (offset === 0) pos.pos += 0.5;
       // parse the text
-      let fixedText = this.element.innerHTML.replace(/(\r\n|\n|\r|<br>)/gm, "");
-      fixedText = fixedText.replace("<div><br></div>", ""); // new lines not allowed - we create new content instead
+      let fixedText = mannualInput || this.element.innerHTML;
+      let cursorRangeAdjustment = 0;
       const bold = /\*\*(.+?)\*\*/gm;
+      const otherBold = /\_\_(.+?)\_\_/gm;
       const preBold = fixedText;
       if (this.nextTypeIsBold) {
         this.nextTypeIsBold = false;
       }
       fixedText = fixedText.replace(bold, "<b>$1</b>&nbsp;");
-      let cursorRangeAdjustment = preBold === fixedText ? 0 : -3;
+      fixedText = fixedText.replace(otherBold, "<b>$1</b>&nbsp;");
+      cursorRangeAdjustment += preBold === fixedText ? 0 : -3;
       const italic = /([^*]+|^)\*([^*]+?)\*/gm;
+      const otherItalic = /([^_]+|^)\_([^_]+?)\_/gm;
       const preItalic = fixedText;
       fixedText = fixedText.replace(italic, "$1<i>$2</i>&nbsp;");
+      fixedText = fixedText.replace(otherItalic, "$1<i>$2</i>&nbsp;");
       cursorRangeAdjustment += preItalic === fixedText ? 0 : -1;
+      // const code = /`(.+?)`/gm;
+
       if (fixedText !== this.element.innerHTML) {
         this.element.innerHTML = fixedText;
       }
@@ -324,8 +259,20 @@ export default {
 </script>
 
 <template>
-  <div>
-    <div v-if="isText">
+  <div
+    ref="element"
+    v-once
+    contenteditable
+    role="textbox"
+    class="textarea w-11/12 overflow-y-visible bg-blue-200"
+    @focusout="unfocus"
+    @input="onInput"
+    @keydown.cmd.b="() => (nextTypeIsBold = !nextTypeIsBold)"
+    @keydown.delete="deleteContent"
+    :id="'content-' + index"
+    v-html="text"
+  />
+  <!-- <div v-if="isText">
       <p
         ref="element"
         v-once
@@ -355,8 +302,7 @@ export default {
         :id="'content-' + index"
         v-html="text"
       />
-    </div>
-  </div>
+    </div> -->
 </template>
 
 <style scoped>

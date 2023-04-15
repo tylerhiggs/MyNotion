@@ -71,7 +71,7 @@ class AddContentToPage(graphene.Mutation):
     page = graphene.Field(PageNode)
 
     @classmethod
-    def mutate(cls, _root, _info, page_id, index, text="", indentation=0, content_type=ContentTypes.TEXT):
+    def mutate(cls, _root, _info, page_id, index, text="", indentation=0, content_type=None):
         print("adding content to page")
         try:
             page = Page.objects.get(id=from_global_id(page_id).id)
@@ -85,8 +85,13 @@ class AddContentToPage(graphene.Mutation):
             text_obj = Text.objects.create(text=text)
 
             index = page.content.count()
-            PageContent.objects.create(
-                text=text_obj, index=index, indentation=indentation, content_type=content_type, page=page)
+            content = PageContent.objects.create(
+                text=text_obj, index=index, indentation=indentation, page=page)
+            if content_type != None:
+                content.content_type = content_type
+                content.text.text = "&nbsp;"
+                content.text.save()
+                content.save()
         except Exception as e:
             print(e)
             return None

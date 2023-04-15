@@ -9,6 +9,8 @@ import { SnackbarColor } from "@/enums";
 import EmojiPicker from "./EmojiPicker.vue";
 import { Menu, MenuButton, MenuItems } from "@headlessui/vue";
 import TextContent from "./TextContent.vue";
+import { Content_Types } from "@/gql/graphql";
+import ContentEditor from "./ContentEditor.vue";
 
 const PAGE_QUERY = graphql(`
   query Page($id: ID!) {
@@ -20,6 +22,7 @@ const PAGE_QUERY = graphql(`
       content {
         edges {
           node {
+            __typename
             id
             contentType
             text {
@@ -61,8 +64,16 @@ const UPDATE_CONTENT = gql`
 `;
 
 const CREATE_CONTENT = gql`
-  mutation CreateContent($pageId: ID!, $index: Int!) {
-    addContentToPage(pageId: $pageId, index: $index) {
+  mutation CreateContent(
+    $pageId: ID!
+    $index: Int!
+    $contentType: CONTENT_TYPES
+  ) {
+    addContentToPage(
+      pageId: $pageId
+      index: $index
+      contentType: $contentType
+    ) {
       page {
         __typename
         id
@@ -116,6 +127,7 @@ export default {
     MenuButton,
     MenuItems,
     TextContent,
+    ContentEditor,
   },
   props: {
     id: {
@@ -187,17 +199,26 @@ export default {
       // Save the current text
       const target = event.target as HTMLElement;
       target.blur();
-      const res = await this.addContentToPage({
-        pageId: this.id,
-        index: index + 1,
-      });
-      if (res?.data) {
-        // Focus the new text area which will be text area with index + 1
-        const newTextArea = document.getElementById(`content-${index + 1}`);
-        if (newTextArea) {
-          newTextArea.focus();
+      try {
+        const res = await this.addContentToPage({
+          pageId: this.id,
+          index: index + 1,
+          contentType:
+            this.contents[index].contentType === Content_Types.BulletedList
+              ? Content_Types.BulletedList
+              : Content_Types.Text,
+        });
+        if (res?.data) {
+          // Focus the new text area which will be text area with index + 1
+          const newTextArea = document.getElementById(`content-${index + 1}`);
+          if (newTextArea) {
+            newTextArea.focus();
+          }
+        } else {
+          this.snackbarStore.toggleSnackbar("Error!", SnackbarColor.error);
         }
-      } else {
+      } catch (err) {
+        console.error(err);
         this.snackbarStore.toggleSnackbar("Error!", SnackbarColor.error);
       }
     },
@@ -228,6 +249,8 @@ input {
   font-size: 2rem;
 }
 
+/* 
+
 textarea {
   border: none;
   outline: none;
@@ -248,7 +271,7 @@ textarea {
   min-height: 40px;
   line-height: 20px;
   resize: none;
-}
+} */
 </style>
 
 <template>
@@ -295,12 +318,17 @@ textarea {
         >
           {{ (index < content.length && content[index]?.text?.text) || "" }}
         </p> -->
-        <TextContent
+        <!-- <TextContent
           :initialType="content.contentType || ''"
           :initialText="content.text?.text || ''"
           :index="index"
           :contentId="content.id"
-          @keydown.enter="addTextArea($event, index, content.id)"
+        /> -->
+        <ContentEditor
+          :content="content.text.text"
+          :contentId="content.id"
+          :index="index"
+          :initialType="content.contentType"
         />
       </div>
     </div>
