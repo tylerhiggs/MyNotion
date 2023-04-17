@@ -11,10 +11,14 @@ import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client/core
 
 const cache = new InMemoryCache()
 
+const variables = process?.env as {[key: string]: string}
+
+const uri = variables["VITE_API_SERVER_URL"] ? `${process.env.VITE_API_SERVER_URL}/graphql/` : 'http://localhost:8000/graphql/'
+
 // HTTP connection to the API
 const httpLink = createHttpLink({
   // You should use an absolute URL here
-  uri: 'http://localhost:8000/graphql/',
+  uri,
 })
 
 // Create the apollo client
