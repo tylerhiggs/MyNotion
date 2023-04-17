@@ -1,6 +1,7 @@
 import { createApp, provide, h } from 'vue'
 import { createPinia } from 'pinia'
 import { createAuth0 } from "@auth0/auth0-vue";
+import * as process from 'process';
 
 import App from './App.vue'
 import router from './router'
@@ -13,7 +14,7 @@ const cache = new InMemoryCache()
 
 const variables = process?.env as {[key: string]: string}
 
-const uri = variables["VITE_API_SERVER_URL"] ? `${process.env.VITE_API_SERVER_URL}/graphql/` : 'http://localhost:8000/graphql/'
+const uri = variables && variables["VUE_APP_API_SERVER_URL"] ? `${process.env.VUE_APP_API_SERVER_URL}/graphql/` : 'http://localhost:8000/graphql/'
 
 // HTTP connection to the API
 const httpLink = createHttpLink({
