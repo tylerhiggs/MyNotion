@@ -18,7 +18,7 @@ load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+TEMPLATE_DIR = os.path.join(BASE_DIR, "webappexample", "templates")
 
 AUTH_USER_MODEL = 'auth_app.User'
 
@@ -85,6 +85,8 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:4040",
+    "http://127.0.0.1:4040",
 ]
 
 ROOT_URLCONF = "MyNotionBackend.urls"
@@ -92,7 +94,7 @@ ROOT_URLCONF = "MyNotionBackend.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [TEMPLATE_DIR],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

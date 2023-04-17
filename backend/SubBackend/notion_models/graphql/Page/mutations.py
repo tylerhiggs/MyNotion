@@ -5,6 +5,7 @@ from .queries import PageContentNode, PageNode
 from notion_models.enums import ContentTypes  # !gql enum
 
 from notion_models.models import Page, Text, PageContent
+from auth_app.models import User
 
 
 class PageType(DjangoObjectType):
@@ -22,13 +23,24 @@ class TextType(DjangoObjectType):
 class CreatePage(graphene.Mutation):
     class Arguments:
         name = graphene.String()
+        email = graphene.String(required=True)
 
     page = graphene.Field(PageNode)
 
     @classmethod
-    def mutate(cls, root, info, name=""):
+    def mutate(cls, root, info, name="", email=None):
+        if (email == None):
+            print("email is None")
+            return None
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            user = User.objects.create_user(email=email)
+        if not user:
+            print("something went wrong creating user")
+            return None
         num_pages = Page.objects.count()
-        page = Page.objects.create(name=name, index=num_pages)
+        page = Page.objects.create(name=name, index=num_pages, user=user)
         PageContent.objects.create(
             text=Text.objects.create(text=""), index=0, page=page)
         return CreatePage(page=page)

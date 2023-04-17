@@ -1,9 +1,33 @@
 <script lang="ts">
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/vue";
 import { defineComponent } from "vue";
+import ProfileMenu from "./ProfileMenu.vue";
+import { useAuth0 } from "@auth0/auth0-vue";
 
 export default defineComponent({
   name: "SidePannelMenuItem",
+  setup() {
+    const { isAuthenticated, logout, loginWithRedirect } = useAuth0();
+    const onLogout = () => {
+      logout({
+        logoutParams: {
+          returnTo: window.location.origin,
+        },
+      });
+    };
+    const login = () => {
+      loginWithRedirect({
+        appState: {
+          target: "/",
+        },
+      });
+    };
+    return {
+      isAuthenticated,
+      onLogout,
+      login,
+    };
+  },
   props: {
     label: {
       type: String,
@@ -20,6 +44,7 @@ export default defineComponent({
     MenuButton,
     MenuItems,
     MenuItem,
+    ProfileMenu,
   },
 });
 </script>

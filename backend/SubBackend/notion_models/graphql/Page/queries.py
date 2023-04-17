@@ -17,7 +17,7 @@ class TextNode(DjangoObjectType):
 class PageNode(DjangoObjectType):
     class Meta:
         model = Page
-        filter_fields = ["id", "name", "is_root"]
+        filter_fields = ["id", "name", "is_root", "user__email"]
         interfaces = (relay.Node,)
 
 

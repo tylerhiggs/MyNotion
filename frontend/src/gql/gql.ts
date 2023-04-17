@@ -19,8 +19,8 @@ const documents = {
     "\n  mutation UpdatePage($id: ID!, $name: String) {\n    updatePage(id: $id, name: $name) {\n      page {\n        __typename\n        id\n        name\n        icon\n      }\n    }\n  }\n": types.UpdatePageDocument,
     "\n  mutation UpdatePContent($id: ID!, $text: String!, $index: Int!) {\n    updatePageContent(contentId: $id, text: $text, index: $index) {\n      pageContent {\n        id\n        text {\n          id\n          text\n        }\n      }\n    }\n  }\n": types.UpdatePContentDocument,
     "\n  mutation CreateContent(\n    $pageId: ID!\n    $index: Int!\n    $contentType: CONTENT_TYPES\n  ) {\n    addContentToPage(\n      pageId: $pageId\n      index: $index\n      contentType: $contentType\n    ) {\n      page {\n        __typename\n        id\n        name\n        icon\n        content {\n          edges {\n            node {\n              id\n              contentType\n              text {\n                id\n                text\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n": types.CreateContentDocument,
-    "\n  query Pages {\n    pages(isRoot: true) {\n      edges {\n        node {\n          __typename\n          id\n          name\n          icon\n        }\n      }\n    }\n  }\n": types.PagesDocument,
-    "\n  mutation CreatePage {\n    createPage {\n      page {\n        __typename\n        id\n        name\n        icon\n      }\n    }\n  }\n": types.CreatePageDocument,
+    "\n  query Pages($email: String) {\n    pages(isRoot: true, user_Email: $email) {\n      edges {\n        node {\n          __typename\n          id\n          name\n          icon\n        }\n      }\n    }\n  }\n": types.PagesDocument,
+    "\n  mutation CreatePage($email: String!) {\n    createPage(email: $email) {\n      page {\n        __typename\n        id\n        name\n        icon\n      }\n    }\n  }\n": types.CreatePageDocument,
     "\n  mutation UpdateContent(\n    $id: ID!\n    $text: String!\n    $index: Int!\n    $type: CONTENT_TYPES\n  ) {\n    updatePageContent(\n      contentId: $id\n      text: $text\n      index: $index\n      contentType: $type\n    ) {\n      pageContent {\n        id\n        contentType\n        text {\n          id\n          text\n        }\n      }\n    }\n  }\n": types.UpdateContentDocument,
     "\n  mutation DeleteContent($id: ID!) {\n    removeContentFromPage(contentId: $id) {\n      page {\n        __typename\n        id\n        content {\n          edges {\n            node {\n              __typename\n              id\n            }\n          }\n        }\n      }\n    }\n  }\n": types.DeleteContentDocument,
 };
@@ -66,11 +66,11 @@ export function graphql(source: "\n  mutation CreateContent(\n    $pageId: ID!\n
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query Pages {\n    pages(isRoot: true) {\n      edges {\n        node {\n          __typename\n          id\n          name\n          icon\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  query Pages {\n    pages(isRoot: true) {\n      edges {\n        node {\n          __typename\n          id\n          name\n          icon\n        }\n      }\n    }\n  }\n"];
+export function graphql(source: "\n  query Pages($email: String) {\n    pages(isRoot: true, user_Email: $email) {\n      edges {\n        node {\n          __typename\n          id\n          name\n          icon\n        }\n      }\n    }\n  }\n"): (typeof documents)["\n  query Pages($email: String) {\n    pages(isRoot: true, user_Email: $email) {\n      edges {\n        node {\n          __typename\n          id\n          name\n          icon\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation CreatePage {\n    createPage {\n      page {\n        __typename\n        id\n        name\n        icon\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation CreatePage {\n    createPage {\n      page {\n        __typename\n        id\n        name\n        icon\n      }\n    }\n  }\n"];
+export function graphql(source: "\n  mutation CreatePage($email: String!) {\n    createPage(email: $email) {\n      page {\n        __typename\n        id\n        name\n        icon\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation CreatePage($email: String!) {\n    createPage(email: $email) {\n      page {\n        __typename\n        id\n        name\n        icon\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

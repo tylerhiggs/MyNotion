@@ -1,6 +1,7 @@
 from django.db import models
 from notion_models.enums import DEFAULT_ICON
 import uuid
+from django.conf import settings
 
 
 class Page(models.Model):
@@ -10,6 +11,9 @@ class Page(models.Model):
 
     index = models.IntegerField(default=0)
     is_root = models.BooleanField(default=True)
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pages")
 
     def __str__(self):
         return self.name

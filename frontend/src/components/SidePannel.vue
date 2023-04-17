@@ -21,16 +21,18 @@ import {
   PlusIcon,
   Cog8ToothIcon,
   ChevronRightIcon,
+  EllipsisVerticalIcon,
 } from "@heroicons/vue/20/solid";
 import { DocumentIcon } from "@heroicons/vue/24/outline";
 import SidePanelMenuItem from "./SidePanelMenuItem.vue";
+import ProfileMenu from "./ProfileMenu.vue";
 import EmojiPicker from "./EmojiPicker.vue";
 import { graphql } from "@/gql";
-import type { CreatePageMutation } from "@/gql/graphql";
+import { useAuth0 } from "@auth0/auth0-vue";
 
 const PAGES_QUERY = graphql(`
-  query Pages {
-    pages(isRoot: true) {
+  query Pages($email: String) {
+    pages(isRoot: true, user_Email: $email) {
       edges {
         node {
           __typename
@@ -44,8 +46,8 @@ const PAGES_QUERY = graphql(`
 `);
 
 const CREATE_PAGE = gql`
-  mutation CreatePage {
-    createPage {
+  mutation CreatePage($email: String!) {
+    createPage(email: $email) {
       page {
         __typename
         id
@@ -59,7 +61,11 @@ const CREATE_PAGE = gql`
 export default {
   name: "SidePannel",
   setup() {
-    const { result, error, refetch } = useQuery(PAGES_QUERY);
+    const { isAuthenticated, user } = useAuth0();
+
+    const { result, error, refetch } = useQuery(PAGES_QUERY, {
+      email: user.value.email,
+    });
     const { mutate: createPage } = useMutation(CREATE_PAGE);
     const snackbarStore = useSnackbarStore();
     const selectedPageStore = useSelectedPageStore();
@@ -73,6 +79,8 @@ export default {
       menuOpen,
       selectedPageStore,
       refetch,
+      isAuthenticated,
+      user,
     };
   },
   methods: {
@@ -95,11 +103,20 @@ export default {
       this.selectedPageStore.setSelectedPageId(pageId);
     },
     async createNewPage() {
-      const res = await this.createPage();
-      const data = res?.data as CreatePageMutation;
+      if (!this.user.email) {
+        this.showSnackbarWaring("Unable to create page: no email");
+        console.error(this.user);
+        return;
+      }
+      const res = await this.createPage({
+        email: this.user.email,
+      });
+      const data = res?.data;
       if (data) {
         this.openPage(data?.createPage?.page?.id || "");
         this.refetch();
+      } else {
+        this.showSnackbarWaring("Unable to create page");
       }
     },
   },
@@ -124,13 +141,15 @@ export default {
     DocumentIcon,
     ChevronRightIcon,
     EmojiPicker,
+    ProfileMenu,
+    EllipsisVerticalIcon,
   },
 };
 </script>
 
 <template>
   <!-- The real menu -->
-  <div class="h-screen w-full bg-gray-50">
+  <div v-if="user.email" class="h-screen w-full bg-gray-50">
     <Menu as="div" class="h-screen w-full">
       <MenuButton
         class="m-1 h-6 w-6 rounded-md bg-black bg-opacity-0 hover:bg-opacity-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
@@ -141,12 +160,20 @@ export default {
       <!-- Wrap this in a <transition> later -->
       <MenuItems class="h-full focus:outline-none" v-show="menuOpen" static>
         <SidePanelMenuItem
-          label="Profile - TODO"
-          @click="showSnackbarWaring('Not implemented yet')"
+          :label="user.email || 'Unknown User'"
           class="mx-1 w-11/12"
         >
           <template v-slot:icon>
-            <UserIcon class="h-5 w-5" />
+            <Menu>
+              <MenuButton>
+                <button class="rounded-md p-0.5 hover:bg-gray-200">
+                  <EllipsisVerticalIcon class="h-5 w-5" />
+                </button>
+              </MenuButton>
+              <MenuItems class="realtive">
+                <ProfileMenu class="absolute" />
+              </MenuItems>
+            </Menu>
           </template>
         </SidePanelMenuItem>
         <SidePanelMenuItem
@@ -186,10 +213,7 @@ export default {
           >
         </MenuItem>
         <!-- Shared pages v-fored with their emojis as icons-->
-        <MenuItem
-          @click="showSnackbarWaring('Not implemented yet')"
-          class="cursor-pointer"
-        >
+        <MenuItem class="cursor-pointer">
           <div class="ml-2 mt-4 flex justify-between text-gray-400">
             <b class="rounded-md bg-inherit p-0.5 hover:bg-gray-100">Private</b>
             <button
