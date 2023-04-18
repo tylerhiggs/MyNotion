@@ -29,6 +29,7 @@ class CreatePage(graphene.Mutation):
 
     @classmethod
     def mutate(cls, root, info, name="", email=None):
+        print("creating page")
         if (email == None):
             print("email is None")
             return None
