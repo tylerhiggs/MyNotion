@@ -37,14 +37,17 @@ class CreatePage(graphene.Mutation):
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             user = User.objects.create_user(email=email)
-        if not user:
-            print("something went wrong creating user")
-            return None
-        num_pages = Page.objects.count()
-        page = Page.objects.create(name=name, index=num_pages, user=user)
-        PageContent.objects.create(
-            text=Text.objects.create(text=""), index=0, page=page)
-        print(f"created page successfully with id {page.id}")
+        try:
+            if not user:
+                print("something went wrong creating user")
+                return None
+            num_pages = Page.objects.count()
+            page = Page.objects.create(name=name, index=num_pages, user=user)
+            PageContent.objects.create(
+                text=Text.objects.create(text=""), index=0, page=page)
+            print(f"created page successfully with id {page.id}")
+        except Exception as e:
+            print(f"something went wrong creating page: {e}")
         return CreatePage(page=page)
 
 
