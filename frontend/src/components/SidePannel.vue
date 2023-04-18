@@ -112,10 +112,15 @@ export default {
         email: this.user.email,
       });
       const data = res?.data;
-      if (data) {
-        this.openPage(data?.createPage?.page?.id || "");
+      if (data?.createPage?.page?.id) {
+        this.openPage(data.createPage.page.id || "");
         this.refetch();
       } else {
+        if (data) {
+          console.error(data);
+        } else {
+          console.error(res);
+        }
         this.showSnackbarWaring("Unable to create page");
       }
     },

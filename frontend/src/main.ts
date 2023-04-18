@@ -14,7 +14,6 @@ const cache = new InMemoryCache()
 
 
 const uri = import.meta.env["VUE_APP_API_SERVER_URL"] ? `${import.meta.env.VUE_APP_API_SERVER_URL}/graphql/` : `${import.meta.env["VITE_API_SERVER_URL"]}/graphql/`;
-console.log(import.meta.env)
 // HTTP connection to the API
 const httpLink = createHttpLink({
   // You should use an absolute URL here
