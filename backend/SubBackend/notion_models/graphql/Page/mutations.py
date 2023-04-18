@@ -44,6 +44,7 @@ class CreatePage(graphene.Mutation):
         page = Page.objects.create(name=name, index=num_pages, user=user)
         PageContent.objects.create(
             text=Text.objects.create(text=""), index=0, page=page)
+        print(f"created page successfully with id {page.id}")
         return CreatePage(page=page)
 
 
