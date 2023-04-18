@@ -1,7 +1,6 @@
 import { createApp, provide, h } from 'vue'
 import { createPinia } from 'pinia'
 import { createAuth0 } from "@auth0/auth0-vue";
-import * as process from 'process';
 
 import App from './App.vue'
 import router from './router'
@@ -9,13 +8,13 @@ import router from './router'
 import './assets/main.css'
 import { DefaultApolloClient } from '@vue/apollo-composable'
 import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client/core'
-
+// import * as dotenv from 'dotenv' // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
+// dotenv.config()
 const cache = new InMemoryCache()
 
-const variables = process?.env as {[key: string]: string}
 
-const uri = variables && variables["VUE_APP_API_SERVER_URL"] ? `${process.env.VUE_APP_API_SERVER_URL}/graphql/` : 'http://localhost:8000/graphql/'
-
+const uri = import.meta.env["VUE_APP_API_SERVER_URL"] ? `${import.meta.env.VUE_APP_API_SERVER_URL}/graphql/` : `${import.meta.env["VITE_API_SERVER_URL"]}/graphql/`;
+console.log(import.meta.env)
 // HTTP connection to the API
 const httpLink = createHttpLink({
   // You should use an absolute URL here

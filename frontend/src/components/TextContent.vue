@@ -96,7 +96,6 @@ export default {
   },
   watch: {
     initialText(newText) {
-      console.log(this.text, newText);
       this.text = newText;
       if (this.element) this.element.innerHTML = newText;
     },
