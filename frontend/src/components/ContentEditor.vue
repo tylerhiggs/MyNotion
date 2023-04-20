@@ -1,5 +1,5 @@
 <script lang="ts">
-import { useEditor, EditorContent } from "@tiptap/vue-3";
+import { useEditor, EditorContent, FloatingMenu } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
 import Typography from "@tiptap/extension-typography";
@@ -7,6 +7,9 @@ import gql from "graphql-tag";
 import { useMutation } from "@vue/apollo-composable";
 import { useSnackbarStore } from "@/stores/snackbar";
 import { SnackbarColor } from "@/enums";
+import Commands from "./CommandUtils/commands";
+import suggestion from "./CommandUtils/suggestion";
+import { ref } from "vue";
 
 const UPDATE_CONTENT = gql`
   mutation UpdateContentNew($id: ID!, $text: String!, $index: Int!) {
@@ -27,6 +30,7 @@ const UPDATE_CONTENT = gql`
 export default {
   components: {
     EditorContent,
+    FloatingMenu,
   },
   props: {
     content: {
@@ -47,11 +51,50 @@ export default {
     },
   },
   setup(props) {
+    const lastLocalUpdate = ref(Date.now());
+    const { mutate: updateContent } = useMutation(UPDATE_CONTENT);
+    const snackbarStore = useSnackbarStore();
     const editor = useEditor({
-      extensions: [StarterKit, Highlight, Typography],
+      extensions: [
+        StarterKit,
+        Highlight,
+        Typography,
+        Commands.configure({
+          suggestion,
+        }),
+      ],
       content: props.content,
       onUpdate: () => {
-        console.log(editor.value?.getHTML());
+        // console.log(editor.value?.getHTML());
+        // save after there has been more than 2 seconds of inactivity please
+        lastLocalUpdate.value = Date.now();
+        setTimeout(async () => {
+          const now = Date.now();
+          if (now - lastLocalUpdate.value <= 2000) {
+            return;
+          }
+          console.log(`saving "${editor.value?.getHTML()}"`);
+          try {
+            const res = await updateContent({
+              id: props.contentId,
+              text: editor.value?.getHTML(),
+              index: props.index,
+            });
+            if (res?.errors) {
+              console.error(res.errors);
+              snackbarStore.toggleSnackbar(
+                "Failed to save content",
+                SnackbarColor.error
+              );
+            }
+          } catch (e) {
+            console.error(e);
+            snackbarStore.toggleSnackbar(
+              "Failed to save content",
+              SnackbarColor.error
+            );
+          }
+        }, 2000);
       },
       editorProps: {
         attributes: {
@@ -60,9 +103,6 @@ export default {
         },
       },
     });
-
-    const { mutate: updateContent } = useMutation(UPDATE_CONTENT);
-    const snackbarStore = useSnackbarStore();
 
     return {
       editor,
@@ -88,12 +128,6 @@ export default {
           text: this.editor?.getHTML(),
           index: this.index,
         });
-        if (res?.data) {
-          this.snackbarStore.toggleSnackbar(
-            "Content saved",
-            SnackbarColor.success
-          );
-        }
         if (res?.errors) {
           console.error(res.errors);
           this.snackbarStore.toggleSnackbar(
@@ -114,6 +148,60 @@ export default {
 </script>
 
 <template>
+  <div v-if="editor !== undefined">
+    <FloatingMenu :editor="editor" class="text-gray-300">
+      <p>Press / for commands</p>
+      <!-- <button
+        class="button"
+        :class="{ 'button--active': editor.isActive('bold') }"
+        @click="editor?.chain().focus().toggleBold().run()"
+      >
+        Bold
+      </button>
+      <button
+        class="button"
+        :class="{ 'button--active': editor.isActive('italic') }"
+        @click="editor?.chain().focus().toggleItalic().run()"
+      >
+        Italic
+      </button>
+      <button
+        class="button"
+        :class="{ 'button--active': editor.isActive('strike') }"
+        @click="editor?.chain().focus().toggleStrike().run()"
+      >
+        Strike
+      </button>
+      <button
+        class="button"
+        :class="{ 'button--active': editor.isActive('code') }"
+        @click="editor?.chain().focus().toggleCode().run()"
+      >
+        Code
+      </button>
+      <button
+        class="button"
+        :class="{ 'button--active': editor.isActive('heading', { level: 1 }) }"
+        @click="editor?.chain().focus().toggleHeading({ level: 1 }).run()"
+      >
+        H1
+      </button>
+      <button
+        class="button"
+        :class="{ 'button--active': editor.isActive('heading', { level: 2 }) }"
+        @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"
+      >
+        H2
+      </button>
+      <button
+        class="button"
+        :class="{ 'button--active': editor.isActive('heading', { level: 3 }) }"
+        @click="editor?.chain().focus().toggleHeading({ level: 3 }).run()"
+      >
+        H3
+      </button> -->
+    </FloatingMenu>
+  </div>
   <EditorContent
     :editor="editor"
     @keydown.tab="(e) => e.preventDefault()"

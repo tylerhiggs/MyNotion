@@ -275,7 +275,7 @@ textarea {
 </style>
 
 <template>
-  <div class="grid h-screen w-full grid-cols-4">
+  <div class="grid h-screen w-full grid-cols-4 overflow-auto">
     <div
       v-if="id !== '' && result?.page?.id !== undefined"
       class="col-start-2 col-end-5 flex flex-col align-top"
