@@ -2,7 +2,9 @@
 import SidePannel from "@/components/SidePannel.vue";
 import MySnackbar from "@/components/MySnackbar.vue";
 import PageContent from "@/components/PageContent.vue";
+import SearchDialog from "@/components/SearchDialog.vue";
 import { useSelectedPageStore } from "@/stores/selectedPage";
+import { useSearchStore } from "@/stores/searchStore";
 import { useAuth0 } from "@auth0/auth0-vue";
 
 export default {
@@ -11,9 +13,11 @@ export default {
     SidePannel,
     MySnackbar,
     PageContent,
+    SearchDialog,
   },
   setup() {
     const selectedPageStore = useSelectedPageStore();
+    const searchStore = useSearchStore();
     const { isAuthenticated, loginWithRedirect, user, isLoading } = useAuth0();
     const login = () => {
       loginWithRedirect({
@@ -28,13 +32,14 @@ export default {
       login,
       user,
       isLoading,
+      searchStore,
     };
   },
 };
 </script>
 
 <template>
-  <main>
+  <main class="fixed">
     <div v-if="!isAuthenticated && isLoading" />
     <div v-else-if="isAuthenticated && user?.email !== undefined">
       <div class="grid grid-cols-8">
@@ -60,6 +65,9 @@ export default {
           Log In
         </button>
       </div>
+    </div>
+    <div class="flex items-center justify-center">
+      <SearchDialog />
     </div>
   </main>
 </template>

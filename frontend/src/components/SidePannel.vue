@@ -3,6 +3,7 @@ import gql from "graphql-tag";
 import { useQuery, useMutation } from "@vue/apollo-composable";
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/vue";
 import { useSnackbarStore } from "@/stores/snackbar";
+import { useSearchStore } from "@/stores/searchStore";
 import { useSelectedPageStore } from "@/stores/selectedPage";
 import { SnackbarColor } from "@/enums";
 import { ref } from "vue";
@@ -25,6 +26,7 @@ import {
 } from "@heroicons/vue/20/solid";
 import { DocumentIcon } from "@heroicons/vue/24/outline";
 import SidePanelMenuItem from "./SidePanelMenuItem.vue";
+import SearchDialog from "./SearchDialog.vue";
 import ProfileMenu from "./ProfileMenu.vue";
 import EmojiPicker from "./EmojiPicker.vue";
 import { graphql } from "@/gql";
@@ -68,8 +70,13 @@ export default {
     });
     const { mutate: createPage } = useMutation(CREATE_PAGE);
     const snackbarStore = useSnackbarStore();
+    const searchStore = useSearchStore();
     const selectedPageStore = useSelectedPageStore();
     const menuOpen = ref(true);
+    const searchDialogOpen = ref(true); //todo change
+    const toggleSearchDialog = () => {
+      searchDialogOpen.value = !searchDialogOpen.value;
+    };
 
     return {
       result,
@@ -81,6 +88,7 @@ export default {
       refetch,
       isAuthenticated,
       user,
+      searchStore,
     };
   },
   methods: {
@@ -148,6 +156,7 @@ export default {
     EmojiPicker,
     ProfileMenu,
     EllipsisVerticalIcon,
+    SearchDialog,
   },
 };
 </script>
@@ -182,15 +191,15 @@ export default {
           </template>
         </SidePanelMenuItem>
         <SidePanelMenuItem
-          label="Search - TODO"
+          label="Search"
           class="mx-1 w-11/12"
-          @click="showSnackbarWaring('Not implemented yet')"
+          @click="searchStore.onOpen()"
         >
           <template v-slot:icon>
             <MagnifyingGlassIcon class="h-5 w-5" />
           </template>
         </SidePanelMenuItem>
-        <SidePanelMenuItem
+        <!-- <SidePanelMenuItem
           label="Updates - TODO"
           class="mx-1 w-11/12"
           @click="showSnackbarWaring('Not implemented yet')"
@@ -198,7 +207,7 @@ export default {
           <template v-slot:icon>
             <ClockIcon class="h-5 w-5" />
           </template>
-        </SidePanelMenuItem>
+        </SidePanelMenuItem> -->
         <SidePanelMenuItem
           label="Settings & members"
           class="mx-1 w-11/12"

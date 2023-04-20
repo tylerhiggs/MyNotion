@@ -1,8 +1,9 @@
-from graphene import ObjectType, relay, Field
+from graphene import ObjectType, relay, Field, String, List
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from notion_models.models import Page, Text, PageContent
 from notion_models.enums import ContentTypes
+from html.parser import HTMLParser
 
 # https://docs.graphene-python.org/projects/django/en/latest/tutorial-relay/
 
@@ -33,3 +34,53 @@ class PageContentNode(DjangoObjectType):
 class PageQuery(ObjectType):
     page = relay.Node.Field(PageNode)
     pages = DjangoFilterConnectionField(PageNode)
+
+
+class MyHTMLParser(HTMLParser):
+    parsed_data = []
+
+    def handle_data(self, data):
+        self.parsed_data.append(data)
+
+
+class SearchResultType(ObjectType):
+    page = Field(PageNode, required=True)
+    content_snippet = String()
+
+
+class SearchQuery(ObjectType):
+    search = Field(List(SearchResultType), query=String())
+
+    def resolve_search(self, info, query):
+        print("searching for", query)
+        try:
+            if query == "":
+                return []
+            queries = query.split(" ")
+            print(f"queries: {queries}")
+            if len(queries) > 1:
+                queries = [query] + queries
+            # will first search for exact match for full string of searched words, then for each word
+            results = {}  # page_id: {"page": page, "content_snippet": None}
+            for q in queries:
+                print(f"searching for {q}")
+                matching_titles = Page.objects.filter(name__icontains=q)
+                matching_content = PageContent.objects.filter(
+                    text__text__icontains=q)
+                parser = MyHTMLParser()
+                new_results = {page.id: {"page": page, "content_snippet": None}
+                               for page in matching_titles}
+                results = new_results | results
+                for content in matching_content:
+                    parser.parsed_data = []
+                    parser.feed(content.text.text)
+                    snippet = [s for s in parser.parsed_data if q.lower()
+                               in s.lower()][0]
+                    if content.page.id not in results:
+                        results[content.page.id] = {
+                            "page": content.page, "content_snippet": snippet}
+            print(results)
+            return [SearchResultType(page=result["page"], content_snippet=result["content_snippet"]) for result in results.values()]
+        except Exception as e:
+            print("something went wrong searching:", e)
+            return []
