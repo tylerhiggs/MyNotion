@@ -29,29 +29,34 @@ class CreatePage(graphene.Mutation):
 
     @classmethod
     def mutate(cls, root, info, name="", email=None):
-        print(f"creating page for {email}")
-        if (email == None or email == ""):
-            print("email is None")
-            return None
         try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            user = User.objects.create(email=email)
-        except Exception as e:
-            print(f"something went wrong getting user: {e}")
-            user = User.objects.create(email=email)
-        try:
-            if not user:
-                print("something went wrong creating user")
+            print(f"creating page for {email}")
+            if (email == None or email == ""):
+                print("email is None")
                 return None
-            num_pages = Page.objects.count()
-            page = Page.objects.create(name=name, index=num_pages, user=user)
-            PageContent.objects.create(
-                text=Text.objects.create(text=""), index=0, page=page)
-            print(f"created page successfully with id {page.id}")
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                user = User.objects.create(email=email)
+            except Exception as e:
+                print(f"something went wrong getting user: {e}")
+                user = User.objects.create(email=email)
+            try:
+                if not user:
+                    print("something went wrong creating user")
+                    return None
+                num_pages = Page.objects.count()
+                page = Page.objects.create(
+                    name=name, index=num_pages, user=user)
+                PageContent.objects.create(
+                    text=Text.objects.create(text=""), index=0, page=page)
+                print(f"created page successfully with id {page.id}")
+            except Exception as e:
+                print(f"something went wrong creating page: {e}")
+            return CreatePage(page=page)
         except Exception as e:
-            print(f"something went wrong creating page: {e}")
-        return CreatePage(page=page)
+            print(f"something went wrong: {e}")
+            return None
 
 
 class UpdatePage(graphene.Mutation):
