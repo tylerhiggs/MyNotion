@@ -23,14 +23,14 @@ class TextType(DjangoObjectType):
 class CreatePage(graphene.Mutation):
     class Arguments:
         name = graphene.String()
-        email = graphene.String(required=True)
+        email = graphene.String()
 
     page = graphene.Field(PageNode)
 
     @classmethod
     def mutate(cls, root, info, name="", email=None):
-        print("creating page")
-        if (email == None):
+        print(f"creating page for {email}")
+        if (email == None or email == ""):
             print("email is None")
             return None
         try:
