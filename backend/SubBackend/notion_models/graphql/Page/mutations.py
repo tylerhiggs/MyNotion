@@ -37,10 +37,10 @@ class CreatePage(graphene.Mutation):
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
-                user = User.objects.create(email=email)
+                user = User.objects.create(email=email, username=email)
             except Exception as e:
                 print(f"something went wrong getting user: {e}")
-                user = User.objects.create(email=email)
+                user = User.objects.create(email=email, username=email)
             try:
                 if not user:
                     print("something went wrong creating user")
