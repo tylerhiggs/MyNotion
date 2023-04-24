@@ -60,6 +60,16 @@ const CREATE_PAGE = gql`
   }
 `;
 
+const DELETE_PAGE = gql`
+  mutation DeletePage($id: ID!) {
+    deletePage(id: $id) {
+      page {
+        id
+      }
+    }
+  }
+`;
+
 export default {
   name: "SidePannel",
   setup() {
@@ -69,6 +79,7 @@ export default {
       email: user.value.email,
     });
     const { mutate: createPage } = useMutation(CREATE_PAGE);
+    const { mutate: deletePage } = useMutation(DELETE_PAGE);
     const snackbarStore = useSnackbarStore();
     const searchStore = useSearchStore();
     const selectedPageStore = useSelectedPageStore();
@@ -89,6 +100,7 @@ export default {
       isAuthenticated,
       user,
       searchStore,
+      deletePage,
     };
   },
   methods: {
@@ -163,19 +175,19 @@ export default {
 
 <template>
   <!-- The real menu -->
-  <div v-if="user.email" class="h-screen w-full bg-gray-50">
-    <Menu as="div" class="h-screen w-full">
-      <MenuButton
+  <div v-if="user.email" class="h-screen w-72 bg-gray-50">
+    <div class="h-screen w-full">
+      <button
         class="m-1 h-6 w-6 rounded-md bg-black bg-opacity-0 hover:bg-opacity-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
         @click="toggleMenu"
       >
         <ChevronDoubleLeftIcon class="h-6 w-6 text-gray-500" />
-      </MenuButton>
+      </button>
       <!-- Wrap this in a <transition> later -->
-      <MenuItems class="h-full focus:outline-none" v-show="menuOpen" static>
+      <div class="h-full focus:outline-none" v-show="menuOpen" static>
         <SidePanelMenuItem
           :label="user.email || 'Unknown User'"
-          class="mx-1 w-11/12"
+          class="mx-1 w-11/12 hover:bg-gray-100"
         >
           <template v-slot:icon>
             <Menu>
@@ -192,7 +204,7 @@ export default {
         </SidePanelMenuItem>
         <SidePanelMenuItem
           label="Search"
-          class="mx-1 w-11/12"
+          class="mx-1 w-11/12 hover:bg-gray-100"
           @click="searchStore.onOpen()"
         >
           <template v-slot:icon>
@@ -208,7 +220,7 @@ export default {
             <ClockIcon class="h-5 w-5" />
           </template>
         </SidePanelMenuItem> -->
-        <SidePanelMenuItem
+        <!-- <SidePanelMenuItem
           label="Settings & members"
           class="mx-1 w-11/12"
           @click="showSnackbarWaring('Not implemented yet')"
@@ -216,18 +228,18 @@ export default {
           <template v-slot:icon>
             <Cog8ToothIcon class="h-5 w-5" />
           </template>
-        </SidePanelMenuItem>
-        <MenuItem
+        </SidePanelMenuItem> -->
+        <div
           @click="showSnackbarWaring('Not implemented yet')"
-          class="cursor-pointer"
+          class="w-full cursor-pointer"
         >
           <b
             class="ml-2 mt-4 inline-block rounded-md bg-inherit p-0.5 text-gray-400 hover:bg-gray-100"
             >Shared</b
           >
-        </MenuItem>
+        </div>
         <!-- Shared pages v-fored with their emojis as icons-->
-        <MenuItem class="cursor-pointer">
+        <div class="w-full cursor-pointer">
           <div class="ml-2 mt-4 flex justify-between text-gray-400">
             <b class="rounded-md bg-inherit p-0.5 hover:bg-gray-100">Private</b>
             <button
@@ -238,7 +250,7 @@ export default {
               <PlusIcon class="h-5 w-5 text-gray-600" />
             </button>
           </div>
-        </MenuItem>
+        </div>
         <p v-if="error">{{ error }}</p>
         <div
           v-else
@@ -251,7 +263,9 @@ export default {
                 ? selectedPageStore.currentPageTitle
                 : page?.node?.name || 'Unknown'
             "
-            class="mx-1 w-11/12"
+            :id="page?.node?.id"
+            :refetch="refetch"
+            class="mx-1 w-11/12 rounded-md hover:bg-gray-100"
             :class="
               selectedPageStore.selectedPageId === page?.node?.id
                 ? 'bg-gray-100'
@@ -277,7 +291,7 @@ export default {
             </template>
           </SidePanelMenuItem>
         </div>
-      </MenuItems>
-    </Menu>
+      </div>
+    </div>
   </div>
 </template>

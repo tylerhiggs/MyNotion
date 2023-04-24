@@ -85,6 +85,23 @@ class UpdatePage(graphene.Mutation):
         return UpdatePage(page=page)
 
 
+class DeletePage(graphene.Mutation):
+    class Arguments:
+        id = graphene.ID(required=True)
+
+    page = graphene.Field(PageNode)
+
+    @classmethod
+    def mutate(cls, _root, _info, id):
+        try:
+            page = Page.objects.get(id=from_global_id(id).id)
+        except Page.DoesNotExist:
+            print("page does not exist")
+            return None
+        page.delete()
+        return DeletePage(page=page)
+
+
 class AddContentToPage(graphene.Mutation):
     class Arguments:
         page_id = graphene.ID(required=True)
@@ -179,6 +196,7 @@ class RemoveContentFromPage(graphene.Mutation):
 
 class PageMutations(graphene.ObjectType):
     create_page = CreatePage.Field()
+    delete_page = DeletePage.Field()
     update_page = UpdatePage.Field()
     add_content_to_page = AddContentToPage.Field()
     update_page_content = UpdateContentOnPage.Field()
