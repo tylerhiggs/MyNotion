@@ -8,12 +8,6 @@ from notion_models.models import Page, Text, PageContent
 from auth_app.models import User
 
 
-class PageType(DjangoObjectType):
-    class Meta:
-        model = Page
-        fields = ("id", "name", "text")
-
-
 class TextType(DjangoObjectType):
     class Meta:
         model = Text
@@ -64,11 +58,12 @@ class UpdatePage(graphene.Mutation):
         id = graphene.ID(required=True)
         name = graphene.String()
         icon = graphene.String()
+        is_favorite = graphene.Boolean()
 
     page = graphene.Field(PageNode)
 
     @classmethod
-    def mutate(cls, _root, _info, id, name=None, icon=None):
+    def mutate(cls, _root, _info, id, name=None, icon=None, is_favorite=None):
         try:
             page = Page.objects.get(id=from_global_id(id).id)
         except Page.DoesNotExist:
@@ -81,6 +76,8 @@ class UpdatePage(graphene.Mutation):
                 print("icon must be a single character")
                 return None
             page.icon = icon
+        if is_favorite != None:
+            page.is_favorite = is_favorite
         page.save()
         return UpdatePage(page=page)
 

@@ -6,17 +6,19 @@ import { Dialog, DialogPanel } from "@headlessui/vue";
 import { useSearchStore } from "@/stores/searchStore";
 import { DocumentIcon } from "@heroicons/vue/24/outline";
 import { useSelectedPageStore } from "@/stores/selectedPage";
+import { useAuth0 } from "@auth0/auth0-vue";
 
 const searchStore = useSearchStore();
 const selectedPageStore = useSelectedPageStore();
+const { user } = useAuth0();
 
 const searchField = ref("");
 const selectedIndex = ref(0);
 
 const { result } = useQuery(
   graphql(`
-    query Search($query: String!) {
-      search(query: $query) {
+    query Search($query: String!, $email: String!) {
+      search(query: $query, email: $email) {
         page {
           __typename
           id
@@ -29,6 +31,7 @@ const { result } = useQuery(
   `),
   () => ({
     query: searchField.value,
+    email: user?.value?.email || "",
   })
 );
 const searchResults = computed(() => {

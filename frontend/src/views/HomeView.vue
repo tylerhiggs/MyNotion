@@ -39,17 +39,15 @@ export default {
 </script>
 
 <template>
-  <main class="fixed">
+  <main class="fixed w-screen">
     <div v-if="!isAuthenticated && isLoading" />
-    <div v-else-if="isAuthenticated && user?.email !== undefined">
-      <div class="grid grid-cols-8">
-        <SidePannel class="col-start-1 col-end-2 w-64" />
-        <div
-          v-if="selectedPageStore.selectedPageId !== ''"
-          class="col-start-2 col-end-9 w-full"
-        >
-          <PageContent :id="selectedPageStore.selectedPageId" />
-        </div>
+    <div
+      v-else-if="isAuthenticated && user?.email !== undefined"
+      class="flex w-screen"
+    >
+      <SidePannel class="h-screen w-64" />
+      <div v-if="selectedPageStore.selectedPageId !== ''" class="w-full">
+        <PageContent :id="selectedPageStore.selectedPageId" />
       </div>
       <MySnackbar />
     </div>

@@ -2,6 +2,7 @@ from graphene import ObjectType, relay, Field, String, List
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from notion_models.models import Page, Text, PageContent
+from auth_app.models import User
 from notion_models.enums import ContentTypes
 from html.parser import HTMLParser
 
@@ -16,6 +17,9 @@ class TextNode(DjangoObjectType):
 
 
 class PageNode(DjangoObjectType):
+    chain = List(of_type="notion_models.graphql.Page.queries.PageNode",
+                 source="chain", required=True)
+
     class Meta:
         model = Page
         filter_fields = ["id", "name", "is_root", "user__email"]
@@ -31,9 +35,18 @@ class PageContentNode(DjangoObjectType):
         interfaces = (relay.Node,)
 
 
+class UserNode(DjangoObjectType):
+    class Meta:
+        model = User
+        filter_fields = ["id", "email"]
+        interfaces = (relay.Node,)
+
+
 class PageQuery(ObjectType):
     page = relay.Node.Field(PageNode)
     pages = DjangoFilterConnectionField(PageNode)
+    user = relay.Node.Field(UserNode)
+    users = DjangoFilterConnectionField(UserNode)
 
 
 class MyHTMLParser(HTMLParser):
@@ -49,9 +62,10 @@ class SearchResultType(ObjectType):
 
 
 class SearchQuery(ObjectType):
-    search = Field(List(SearchResultType), query=String())
+    search = Field(List(SearchResultType), query=String(),
+                   email=String(required=True))
 
-    def resolve_search(self, info, query):
+    def resolve_search(self, info, query, email):
         print("searching for", query)
         try:
             if query == "":
@@ -64,9 +78,10 @@ class SearchQuery(ObjectType):
             results = {}  # page_id: {"page": page, "content_snippet": None}
             for q in queries:
                 print(f"searching for {q}")
-                matching_titles = Page.objects.filter(name__icontains=q)
+                matching_titles = Page.objects.filter(
+                    name__icontains=q, user__email=email)
                 matching_content = PageContent.objects.filter(
-                    text__text__icontains=q)
+                    text__text__icontains=q, page__user__email=email)
                 parser = MyHTMLParser()
                 new_results = {page.id: {"page": page, "content_snippet": None}
                                for page in matching_titles}

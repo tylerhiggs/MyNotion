@@ -6,7 +6,7 @@ import { useSnackbarStore } from "@/stores/snackbar";
 import { useSearchStore } from "@/stores/searchStore";
 import { useSelectedPageStore } from "@/stores/selectedPage";
 import { SnackbarColor } from "@/enums";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 
 import {
   ClockIcon,
@@ -41,6 +41,43 @@ const PAGES_QUERY = graphql(`
           id
           name
           icon
+          isFavorite
+          isPublic
+          editUsers {
+            edges {
+              node {
+                __typename
+                id
+                email
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`);
+
+const SHARED_PAGES_QUERY = graphql(`
+  query SharedPages($email: String!) {
+    users(email: $email) {
+      edges {
+        node {
+          __typename
+          id
+          email
+          editablePages {
+            edges {
+              node {
+                __typename
+                id
+                name
+                icon
+                isFavorite
+                isPublic
+              }
+            }
+          }
         }
       }
     }
@@ -55,16 +92,8 @@ const CREATE_PAGE = gql`
         id
         name
         icon
-      }
-    }
-  }
-`;
-
-const DELETE_PAGE = gql`
-  mutation DeletePage($id: ID!) {
-    deletePage(id: $id) {
-      page {
-        id
+        isFavorite
+        isPublic
       }
     }
   }
@@ -78,17 +107,50 @@ export default {
     const { result, error, refetch } = useQuery(PAGES_QUERY, {
       email: user.value.email,
     });
+    const { result: sharedResult, error: sharedError } = useQuery(
+      SHARED_PAGES_QUERY,
+      {
+        email: user.value.email || "",
+      }
+    );
+    const privatePagesAndFavs = computed(() => {
+      return (result.value?.pages?.edges || [])
+        .map((edge) => edge?.node)
+        .filter((node) => node?.editUsers.edges.length === 0);
+    });
+    const sharedPagesAndFavs = computed(() => {
+      const sharedWithMe = (sharedResult.value?.users?.edges || []).map(
+        (edge) => edge?.node?.editablePages?.edges || []
+      );
+      const sharedWithMeFlattened =
+        sharedWithMe.length == 1
+          ? sharedWithMe[0].map((edge) => edge?.node)
+          : [];
+      const sharedWithOthers = (result.value?.pages?.edges || [])
+        .map((edge) => edge?.node)
+        .filter((node) => node?.editUsers.edges.length || 0 > 0);
+      return [...sharedWithMeFlattened, ...sharedWithOthers];
+    });
+    const favoritePages = computed(() => {
+      const privateFavoritePages = privatePagesAndFavs.value.filter(
+        (node) => node?.isFavorite
+      );
+      const sharedFavoritePages = sharedPagesAndFavs.value.filter(
+        (node) => node?.isFavorite
+      );
+      return [...privateFavoritePages, ...sharedFavoritePages];
+    });
     const { mutate: createPage } = useMutation(CREATE_PAGE);
-    const { mutate: deletePage } = useMutation(DELETE_PAGE);
     const snackbarStore = useSnackbarStore();
     const searchStore = useSearchStore();
     const selectedPageStore = useSelectedPageStore();
     const menuOpen = ref(true);
-    const searchDialogOpen = ref(true); //todo change
-    const toggleSearchDialog = () => {
-      searchDialogOpen.value = !searchDialogOpen.value;
-    };
-
+    const privatePages = computed(() => {
+      return privatePagesAndFavs.value.filter((node) => !node?.isFavorite);
+    });
+    const sharedPages = computed(() => {
+      return sharedPagesAndFavs.value.filter((node) => !node?.isFavorite);
+    });
     return {
       result,
       error,
@@ -100,7 +162,9 @@ export default {
       isAuthenticated,
       user,
       searchStore,
-      deletePage,
+      favoritePages,
+      sharedPages,
+      privatePages,
     };
   },
   methods: {
@@ -232,6 +296,50 @@ export default {
         <div
           @click="showSnackbarWaring('Not implemented yet')"
           class="w-full cursor-pointer"
+          v-if="favoritePages.length"
+        >
+          <b
+            class="ml-2 mt-4 inline-block rounded-md bg-inherit p-0.5 text-gray-400 hover:bg-gray-100"
+            >Favorites</b
+          >
+        </div>
+        <div v-for="page in favoritePages || []" :key="page?.id || ''">
+          <SidePanelMenuItem
+            :label="
+              selectedPageStore.selectedPageId === page?.id
+                ? selectedPageStore.currentPageTitle
+                : page?.name || 'Unknown'
+            "
+            :id="page?.id"
+            :refetch="refetch"
+            class="mx-1 w-11/12 rounded-md hover:bg-gray-100"
+            :class="
+              selectedPageStore.selectedPageId === page?.id ? 'bg-gray-100' : ''
+            "
+            @click="openPage(page?.id)"
+          >
+            <template v-slot:icon>
+              <Menu>
+                <MenuButton>
+                  <button class="rounded-md p-0.5 hover:bg-gray-200">
+                    <DocumentIcon
+                      v-if="!page?.icon || page?.icon === 'E'"
+                      class="h-5 w-5"
+                    />
+                    <p v-else>{{ page?.icon }}</p>
+                  </button>
+                </MenuButton>
+                <MenuItems class="relative">
+                  <EmojiPicker class="absolute" :id="page?.id || ''" />
+                </MenuItems>
+              </Menu>
+            </template>
+          </SidePanelMenuItem>
+        </div>
+        <div
+          @click="showSnackbarWaring('Not implemented yet')"
+          class="w-full cursor-pointer"
+          v-if="sharedPages.length"
         >
           <b
             class="ml-2 mt-4 inline-block rounded-md bg-inherit p-0.5 text-gray-400 hover:bg-gray-100"
@@ -252,40 +360,34 @@ export default {
           </div>
         </div>
         <p v-if="error">{{ error }}</p>
-        <div
-          v-else
-          v-for="page in result?.pages?.edges || []"
-          :key="page?.node?.id || ''"
-        >
+        <div v-else v-for="page in privatePages || []" :key="page?.id || ''">
           <SidePanelMenuItem
             :label="
-              selectedPageStore.selectedPageId === page?.node?.id
+              selectedPageStore.selectedPageId === page?.id
                 ? selectedPageStore.currentPageTitle
-                : page?.node?.name || 'Unknown'
+                : page?.name || 'Unknown'
             "
-            :id="page?.node?.id"
+            :id="page?.id"
             :refetch="refetch"
             class="mx-1 w-11/12 rounded-md hover:bg-gray-100"
             :class="
-              selectedPageStore.selectedPageId === page?.node?.id
-                ? 'bg-gray-100'
-                : ''
+              selectedPageStore.selectedPageId === page?.id ? 'bg-gray-100' : ''
             "
-            @click="openPage(page?.node?.id)"
+            @click="openPage(page?.id)"
           >
             <template v-slot:icon>
               <Menu>
                 <MenuButton>
                   <button class="rounded-md p-0.5 hover:bg-gray-200">
                     <DocumentIcon
-                      v-if="!page?.node?.icon || page?.node?.icon === 'E'"
+                      v-if="!page?.icon || page?.icon === 'E'"
                       class="h-5 w-5"
                     />
-                    <p v-else>{{ page?.node?.icon }}</p>
+                    <p v-else>{{ page?.icon }}</p>
                   </button>
                 </MenuButton>
                 <MenuItems class="relative">
-                  <EmojiPicker class="absolute" :id="page?.node?.id || ''" />
+                  <EmojiPicker class="absolute" :id="page?.id || ''" />
                 </MenuItems>
               </Menu>
             </template>

@@ -11,6 +11,7 @@ import { Menu, MenuButton, MenuItems } from "@headlessui/vue";
 import TextContent from "./TextContent.vue";
 import { Content_Types } from "@/gql/graphql";
 import ContentEditor from "./ContentEditor.vue";
+import NavBar from "./NavBar.vue";
 
 const PAGE_QUERY = graphql(`
   query Page($id: ID!) {
@@ -128,6 +129,7 @@ export default {
     MenuItems,
     TextContent,
     ContentEditor,
+    NavBar,
   },
   props: {
     id: {
@@ -190,7 +192,6 @@ export default {
       this.emojiPickerOpen = false;
     },
     /**
-     *
      * @param event
      * @param index index should be the index of the current text area
      * @param id content id for the current text area to save it before adding a new one
@@ -275,6 +276,7 @@ textarea {
 </style>
 
 <template>
+  <NavBar class="w-full" />
   <div class="grid h-screen w-full grid-cols-4 overflow-auto">
     <div
       v-if="id !== '' && result?.page?.id !== undefined"
@@ -293,9 +295,9 @@ textarea {
             <button
               v-else
               @click="toggleEmojiPicker"
-              class="rounded-md hover:bg-gray-100"
+              class="rounded-md p-1 opacity-30 hover:bg-gray-200"
             >
-              {{ emojiPickerOpen ? "Close" : "Add icon" }}
+              Add Icon
             </button>
           </MenuButton>
           <MenuItems class="h-72 w-72">
@@ -304,26 +306,14 @@ textarea {
         </Menu>
       </div>
       <div class="mb-12 flex w-full justify-between align-top">
-        <input v-model="title" @focusout="saveTitle" class="w-full font-bold" />
+        <input
+          v-model="title"
+          placeholder="Untitled"
+          @focusout="saveTitle"
+          class="w-full font-bold"
+        />
       </div>
       <div v-for="(content, index) in contents">
-        <!-- <p
-          role="textbox"
-          class="textarea w-11/12 overflow-y-visible bg-blue-200"
-          :id="'content-' + index"
-          contenteditable
-          v-on:keyup.enter="addTextArea($event, index, edge.node.id)"
-          @focusout="onContentBlur($event, index, edge.node.id)"
-          @keyup="onChange($event, index)"
-        >
-          {{ (index < content.length && content[index]?.text?.text) || "" }}
-        </p> -->
-        <!-- <TextContent
-          :initialType="content.contentType || ''"
-          :initialText="content.text?.text || ''"
-          :index="index"
-          :contentId="content.id"
-        /> -->
         <ContentEditor
           :content="content.text.text"
           :contentId="content.id"
