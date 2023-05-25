@@ -1,6 +1,8 @@
 import { Extension } from '@tiptap/core'
 import Suggestion from '@tiptap/suggestion'
 
+// commands.ts
+
 export default Extension.create({
   name: 'commands',
 
