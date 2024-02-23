@@ -1,4 +1,4 @@
 #!/bin/sh
-source ~/.virtualenvs/MyNotion/bin/activate
-cd frontend && npm install && npm run build
+
+python backend/SubBackend/manage.py runserver
 cd frontend && npm start

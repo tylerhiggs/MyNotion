@@ -1,20 +1,28 @@
-import { Extension } from '@tiptap/core'
-import Suggestion from '@tiptap/suggestion'
+import { Extension } from "@tiptap/core";
+import Suggestion from "@tiptap/suggestion";
 
 // commands.ts
 
 export default Extension.create({
-  name: 'commands',
+  name: "commands",
 
   addOptions() {
     return {
       suggestion: {
-        char: '/',
-        command: ({ editor, range, props }: {editor: unknown, range: unknown, props: {command: Function}}) => {
-          props.command({ editor, range })
+        char: "/",
+        command: ({
+          editor,
+          range,
+          props,
+        }: {
+          editor: unknown;
+          range: unknown;
+          props: { command: Function };
+        }) => {
+          props.command({ editor, range });
         },
       },
-    }
+    };
   },
 
   addProseMirrorPlugins() {
@@ -23,6 +31,6 @@ export default Extension.create({
         editor: this.editor,
         ...this.options.suggestion,
       }),
-    ]
+    ];
   },
-})
+});

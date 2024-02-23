@@ -1,8 +1,29 @@
 import { VueRenderer } from '@tiptap/vue-3'
 import type { Editor, Range } from '@tiptap/core'
 import tippy from 'tippy.js'
-
+import { useMutation } from '@vue/apollo-composable'
+import gql from 'graphql-tag'
+import { useAuth0 } from '@auth0/auth0-vue'
+import { useSelectedPageStore } from '@/stores/selectedPage'
 import CommandsList from './CommandList.vue'
+
+// const CREATE_PAGE = gql` 
+//   mutation createSubPage($email: String!, $parentId: String!) {
+//     createPage(email: $email, parentId: $parentId) {
+//       id
+//       name
+//       icon
+//       parent {
+//         __typename
+//         id
+//       }
+//     }
+//   }
+// `;
+
+// const { user } = useAuth0()
+// const { mutate: createPage } = useMutation(CREATE_PAGE)
+// const pageStore = useSelectedPageStore()
 
 export default {
   items: ({ query }: { query: string }) => {
@@ -113,6 +134,24 @@ export default {
             .focus()
             .deleteRange(range)
             .toggleCodeBlock()
+            .run()
+        }
+      },
+      {
+        title: "Page",
+        command: async ({ editor, range }: { editor: Editor, range: Range}) => {
+          editor
+            .chain()
+            .focus()
+            .deleteRange(range)
+            .insertContent({
+              type: "PagesExtension",
+              attrs: {
+                id: "",
+                name: "",
+                icon: "",
+              },
+            })
             .run()
         }
       }

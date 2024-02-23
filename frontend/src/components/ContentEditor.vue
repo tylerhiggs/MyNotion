@@ -3,6 +3,7 @@ import { useEditor, EditorContent, FloatingMenu } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
 import Typography from "@tiptap/extension-typography";
+import PagesExtension from "./CommandUtils/PagesExtension";
 import gql from "graphql-tag";
 import { useMutation } from "@vue/apollo-composable";
 import { useSnackbarStore } from "@/stores/snackbar";
@@ -59,14 +60,14 @@ export default {
         StarterKit,
         Highlight,
         Typography,
+        PagesExtension,
         Commands.configure({
           suggestion,
         }),
       ],
       content: props.content,
       onUpdate: () => {
-        // console.log(editor.value?.getHTML());
-        // save after there has been more than 2 seconds of inactivity please
+        // save after there has been more than 2 seconds of inactivity
         lastLocalUpdate.value = Date.now();
         setTimeout(async () => {
           const now = Date.now();
