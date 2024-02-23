@@ -1,5 +1,7 @@
 # My Notion
 
+Deployed on Railway [here](https://mynotion-frontend-production.up.railway.app/)
+
 ## Python environment
 Create Python environment with
 ```
