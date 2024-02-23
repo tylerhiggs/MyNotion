@@ -20,7 +20,7 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = os.path.join(BASE_DIR, "webappexample", "templates")
 
-AUTH_USER_MODEL = 'auth_app.User'
+AUTH_USER_MODEL = 'notion_models.User'
 
 # Auth0 settings
 SOCIAL_AUTH_TRAILING_SLASH = False  # Remove trailing slash from routes
@@ -116,8 +116,12 @@ WSGI_APPLICATION = "MyNotionBackend.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": os.environ.get("POSTGRES_ENGINE", "django.db.backends.sqlite3"),
+        "NAME": os.environ.get("POSTGRES_DATABASE", BASE_DIR / "db.sqlite3"),
+        "USER": os.environ.get("POSTGRES_USER", "postgres"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
+        "HOST": os.environ.get("POSTGRES_HOST", "db"),
+        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
     }
 }
 

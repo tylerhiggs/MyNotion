@@ -20,6 +20,7 @@ graphql-relay==3.2.0
 idna==3.4
 oauthlib==3.2.2
 promise==2.3
+psycopg2-binary==2.9.6
 pyasn1==0.4.8
 pycodestyle==2.10.0
 pycparser==2.21

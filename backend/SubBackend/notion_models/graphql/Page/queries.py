@@ -2,7 +2,7 @@ from graphene import ObjectType, relay, Field, String, List
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from notion_models.models import Page, Text, PageContent
-from auth_app.models import User
+from notion_models.models import User
 from notion_models.enums import ContentTypes
 from html.parser import HTMLParser
 

@@ -3,6 +3,7 @@ from notion_models.enums import DEFAULT_ICON
 import uuid
 from django.conf import settings
 from typing import List
+from .User import User
 
 
 class Page(models.Model):
@@ -19,7 +20,7 @@ class Page(models.Model):
         "self", on_delete=models.CASCADE, related_name="children", null=True, blank=True)
 
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pages")
+        User, on_delete=models.CASCADE, related_name="pages")
 
     @property
     def chain(self) -> List["Page"]:

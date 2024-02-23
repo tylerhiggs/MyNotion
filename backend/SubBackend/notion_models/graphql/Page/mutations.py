@@ -5,7 +5,7 @@ from .queries import PageContentNode, PageNode
 from notion_models.enums import ContentTypes  # !gql enum
 
 from notion_models.models import Page, Text, PageContent
-from auth_app.models import User
+from notion_models.models import User
 
 
 class TextType(DjangoObjectType):
